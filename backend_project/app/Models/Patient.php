@@ -19,17 +19,17 @@ class Patient extends Model
         'emergency_contact_name',
         'emergency_contact_relation',
         'emergency_contact_phone',
-        'has_chronic_disease',
-        'chronic_diseases',
-        'takes_regular_medication',
-        'regular_medications',
-        'uses_blood_thinners',
-        'has_allergies',
-        'allergies',
-        'has_anesthesia_problems',
-        'anesthesia_problems_details',
-        'has_gum_bleeding',
-        'has_dental_allergies',
+        // 'has_chronic_disease',
+        // 'chronic_diseases',
+        // 'takes_regular_medication',
+        // 'regular_medications',
+        // 'uses_blood_thinners',
+        // 'has_allergies',
+        // 'allergies',
+        // 'has_anesthesia_problems',
+        // 'anesthesia_problems_details',
+        // 'has_gum_bleeding',
+        // 'has_dental_allergies',
         'is_pregnant',
         'is_breastfeeding',
         'is_smoker',
@@ -38,24 +38,57 @@ class Patient extends Model
     ];
 
     protected $casts = [
-        'has_chronic_disease'       => 'boolean',
-        'chronic_diseases'          => 'array',
-        'takes_regular_medication'  => 'boolean',
-        'regular_medications'       => 'array',
-        'uses_blood_thinners'       => 'boolean',
-        'has_allergies'             => 'boolean',
-        'allergies'                 => 'array',
-        'has_anesthesia_problems'   => 'boolean',
-        'has_gum_bleeding'          => 'boolean',
-        'has_dental_allergies'      => 'boolean',
-        'is_pregnant'               => 'boolean',
-        'is_breastfeeding'          => 'boolean',
-        'is_smoker'                 => 'boolean',
-        'drinks_alcohol_frequently' => 'boolean',
+        // 'has_chronic_disease'       => 'boolean',
+        // 'chronic_diseases'          => 'array',
+        // 'takes_regular_medication'  => 'boolean',
+        // 'regular_medications'       => 'array',
+        // 'uses_blood_thinners'       => 'boolean',
+        // 'has_allergies'             => 'boolean',
+        // 'allergies'                 => 'array',
+        // 'has_anesthesia_problems'   => 'boolean',
+        // 'has_gum_bleeding'          => 'boolean',
+        // 'has_dental_allergies'      => 'boolean',
+        // 'is_pregnant'               => 'boolean',
+        // 'is_breastfeeding'          => 'boolean',
+        // 'is_smoker'                 => 'boolean',
+        // 'drinks_alcohol_frequently' => 'boolean',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
     }
+
+    public function chronicDiseases()
+    {
+        return $this->hasMany(PatientChronicDisease::class);
+    }
+
+    public function medications()
+    {
+        return $this->hasMany(PatientMedication::class);
+    }
+
+    public function allergies()
+    {
+        return $this->hasMany(PatientAllergy::class);
+    }
+
+
+
+//     public function medicalHistories()
+// {
+//     return $this->hasMany(PatientMedicalHistory::class);
+// }
+
+// // Optional: Helper Scopes
+// public function anesthesiaProblems()
+// {
+//     return $this->medicalHistories()->where('category', 'anesthesia');
+// }
+
+// public function dentalProblems()
+// {
+//     return $this->medicalHistories()->where('category', 'dental');
+// }
 }

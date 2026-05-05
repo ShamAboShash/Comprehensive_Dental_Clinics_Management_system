@@ -9,7 +9,6 @@ class Dentist extends Model
     protected $fillable = [
         'employee_id',
         'specialization_id',
-        'work_hours',
         'license_number',
         'years_of_experience',
         'bio',
@@ -33,4 +32,9 @@ class Dentist extends Model
     {
         return $this->hasOneThrough(User::class, Employee::class);
     }
+
+    public function workSchedules()
+{
+    return $this->hasMany(DentistWorkSchedule::class);
+}
 }
