@@ -65,7 +65,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'role'              => UserRole::class,  
+            'role'              => UserRole::class,
             'gender'            => 'integer',
         ];
     }
@@ -95,6 +95,9 @@ class User extends Authenticatable
 
     public function patient()
      { return $this->hasOne(Patient::class); }
+     
+     public function dentist()
+    { return $this->hasOneThrough(Dentist::class, Employee::class);}
 
     // public function labManager()
     //  { return $this->hasOne(LabManager::class); }

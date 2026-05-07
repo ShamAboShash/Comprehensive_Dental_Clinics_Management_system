@@ -14,6 +14,6 @@ class Specialization extends Model
 
     public function dentists()
     {
-        return $this->hasOne(Dentist::class);
+       return $this->hasMany(Dentist::class);
     }
 }

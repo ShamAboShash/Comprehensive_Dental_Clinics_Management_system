@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreEmployeeRequest;
+use App\Http\Requests\UpdateEmployeeRequest;
 use App\Models\Dentist;
 use App\Models\Employee;
 use App\Models\EmployeeEducation;
@@ -11,6 +13,7 @@ use App\Models\EmployeeExperience;
 use App\Models\EmployeeSkill;
 use App\Models\EmployeeTraining;
 use App\Models\User;
+use App\Enums\UserRole;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -29,7 +32,7 @@ class EmployeeController extends Controller
                 'address' => $request->address,
                 'gender' => $request->gender,
                 'role' => $request->role,
-                'password' => bcrypt('password'), // Temporary password - should be changed later
+                // 'password' => bcrypt('password'), // Temporary password - should be changed later
             ]);
 
             // 2. Create Employee
@@ -60,7 +63,7 @@ class EmployeeController extends Controller
 
             return response()->json([
                 'message' => 'Employee created successfully',
-                'data' => new EmployeeResource($user)
+                'data' => $user
             ], 201);
         });
     }
@@ -150,9 +153,9 @@ class EmployeeController extends Controller
                     ]
                 );
             } // If role changed from Dentist to something else → delete dentist record
-            elseif ($employee->wasChanged('role') && $employee->role !== UserRole::DENTIST->value) {
-                Dentist::where('employee_id', $empData->id)->delete();
-            }
+            // elseif ($employee->wasChanged('role') && $employee->role !== UserRole::DENTIST->value) {
+            //     Dentist::where('employee_id', $empData->id)->delete();
+            // }
 
             // Reload with relations
             $employee->load([
@@ -165,7 +168,7 @@ class EmployeeController extends Controller
 
             return response()->json([
                 'message' => 'Employee updated successfully',
-                'data' => new EmployeeResource($employee)
+                'data' => $employee
             ]);
         });
     }

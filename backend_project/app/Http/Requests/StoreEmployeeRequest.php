@@ -4,6 +4,8 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Enum;
+use App\Enums\UserRole;
 
 class StoreEmployeeRequest extends FormRequest
 {
@@ -13,7 +15,7 @@ class StoreEmployeeRequest extends FormRequest
     public function authorize(): bool
     {
         // return true;
-        return auth()->user()->role === \App\Models\User::ROLE_ADMIN;
+        return auth()->user()->role === UserRole::ADMIN;
     }
 
     /**
