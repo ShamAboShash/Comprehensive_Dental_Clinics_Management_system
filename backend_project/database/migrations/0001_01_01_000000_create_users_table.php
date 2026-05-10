@@ -19,9 +19,10 @@ return new class extends Migration
     $table->string('address')->nullable();
 
     // Roles: 1=Admin, 2=Dentist, 3=Secretary, 4=Patient, 5=Lab, 6=Warehouse
-$table->unsignedTinyInteger('role')->default(UserRole::PATIENT->value);
+    $table->unsignedTinyInteger('role')->default(UserRole::PATIENT->value);
     // Gender: 1=Male, 2=Female
     $table->Integer('gender')->nullable();
+    $table->boolean('is_active')->default(true);
 
     $table->string('email')->unique();
     $table->timestamp('email_verified_at')->nullable();

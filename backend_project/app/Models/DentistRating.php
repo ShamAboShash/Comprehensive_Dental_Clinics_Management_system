@@ -12,9 +12,7 @@ class DentistRating extends Model
     protected $fillable = [
         'dentist_id',
         'patient_id',
-        'rating',
-        'review',
-    ];
+        'rating',    ];
 
     protected $casts = [
         'rating' => 'integer',

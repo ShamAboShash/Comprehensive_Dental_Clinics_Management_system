@@ -42,7 +42,9 @@ class User extends Authenticatable
         'address',
         'password',
         'gender',
-        'role'
+        'role',
+        'is_active'
+
     ];
 
     /**
@@ -78,31 +80,32 @@ class User extends Authenticatable
 
     // Example of usage
     public function isStaff(): bool
-    {
-        return $this->role?->isStaff() ?? false;
-    }
+    { return $this->role?->isStaff() ?? false; }
 
-    // public function admin()
-    //  { return $this->hasOne(Admin::class); }
-
-    // public function dentist()
-    //  { return $this->hasOne(Dentist::class); }
-
-    // public function secretary()
-    //  { return $this->hasOne(Secretary::class); }
     public function employee()
      { return $this->hasOne(Employee::class); }
 
     public function patient()
      { return $this->hasOne(Patient::class); }
-     
-     public function dentist()
+
+    public function dentist()
     { return $this->hasOneThrough(Dentist::class, Employee::class);}
 
-    // public function labManager()
-    //  { return $this->hasOne(LabManager::class); }
+    public function isAdmin(): bool
+    { return $this->role === UserRole::ADMIN; }
 
-    // public function warehouseManager()
-    //  { return $this->hasOne(WarehouseManager::class); }
+    public function isDentist(): bool
+    { return $this->role === UserRole::DENTIST; }
 
+    public function isSecretary(): bool
+    { return $this->role === UserRole::SECRETARY; }
+
+    public function isPatient(): bool
+    { return $this->role === UserRole::PATIENT; }
+
+    public function isLabManager(): bool
+    { return $this->role === UserRole::LAB_MANAGER; }
+
+    public function isWarehouseManager(): bool
+    { return $this->role === UserRole::WAREHOUSE_MANAGER; }
 }

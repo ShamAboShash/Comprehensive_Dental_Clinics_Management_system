@@ -19,12 +19,9 @@ return new class extends Migration
             $table->foreignId('patient_id')->constrained('patients')->onDelete('cascade');
 
             $table->tinyInteger('rating')->unsigned()->comment('1 to 5 stars');
-            // $table->text('review')->nullable();
-
             $table->timestamps();
-
             // One patient can rate one dentist only once
-            // $table->unique(['dentist_id', 'patient_id']);
+            $table->unique(['dentist_id', 'patient_id']);
         });
     }
 

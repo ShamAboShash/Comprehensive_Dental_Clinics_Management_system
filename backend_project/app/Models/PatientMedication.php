@@ -11,9 +11,10 @@ class PatientMedication extends Model
 
     protected $fillable = [
         'patient_id',
-        'medication_name',
+        'medication_id',
         'dosage',
         'frequency',
+        'notes',
     ];
 
     /**
@@ -22,5 +23,10 @@ class PatientMedication extends Model
     public function patient()
     {
         return $this->belongsTo(Patient::class);
+    }
+
+    public function medication()
+    {
+        return $this->belongsTo(Medication::class);
     }
 }

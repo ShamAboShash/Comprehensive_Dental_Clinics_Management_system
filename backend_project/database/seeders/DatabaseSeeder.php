@@ -15,11 +15,28 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+
+        $this->call([
+            SpecializationSeeder::class,
+            UserSeeder::class,
+            MedicationSeeder::class,
+            EmployeeSeeder::class,
+            EmployeeEducationSeeder::class,
+            EmployeeExperienceSeeder::class,
+            EmployeeSkillSeeder::class,
+            EmployeeTrainingSeeder::class,
+            PatientSeeder::class,
+            PatientAllergySeeder::class,
+            PatientChronicDiseaseSeeder::class,
+            PatientMedicationSeeder::class,
+            DentistSeeder::class,   
+        ]);
+
         // User::factory(10)->create();
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        // User::factory()->create([
+        //     'name' => 'Test User',
+        //     'email' => 'test@example.com',
+        // ]);
     }
 }

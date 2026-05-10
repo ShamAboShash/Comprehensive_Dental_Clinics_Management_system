@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Http\Requests\StoreEmployeeRequest;
 use App\Http\Requests\UpdateEmployeeRequest;
+use App\Http\Resources\EmployeeResource;
 use App\Models\Dentist;
 use App\Models\Employee;
 use App\Models\EmployeeEducation;
@@ -13,17 +14,25 @@ use App\Models\EmployeeExperience;
 use App\Models\EmployeeSkill;
 use App\Models\EmployeeTraining;
 use App\Models\User;
-use App\Enums\UserRole;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 
 class EmployeeController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth:sanctum');
+    }
+
     public function store(StoreEmployeeRequest $request)
     {
-        return DB::transaction(function () use ($request) {
+        if (!Gate::allows('manage-employees')) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
-            // 1. Create User
+        return DB::transaction(function () use ($request) {
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
@@ -32,23 +41,19 @@ class EmployeeController extends Controller
                 'address' => $request->address,
                 'gender' => $request->gender,
                 'role' => $request->role,
-                // 'password' => bcrypt('password'), // Temporary password - should be changed later
+                'is_active' => true,
             ]);
 
-            // 2. Create Employee
             $employee = Employee::create([
                 'user_id' => $user->id,
                 'secondary_phone' => $request->secondary_phone,
                 'marital_status' => $request->marital_status,
                 'salary' => $request->salary,
                 'hire_date' => $request->hire_date,
-                'is_active' => true,
             ]);
 
-            // 3. Create related data
             $this->createRelatedData($employee, $request);
 
-            // 4. If Dentist → create Dentist record
             if ($request->role === UserRole::DENTIST->value) {
                 Dentist::create([
                     'employee_id' => $employee->id,
@@ -68,9 +73,8 @@ class EmployeeController extends Controller
         });
     }
 
-    private function createRelatedData(Employee $employee, $request): void
+    private function createRelatedData(Employee $employee, Request $request): void
     {
-        // Educations
         if ($request->educations) {
             foreach ($request->educations as $edu) {
                 EmployeeEducation::create([
@@ -80,7 +84,6 @@ class EmployeeController extends Controller
             }
         }
 
-        // Experiences
         if ($request->experiences) {
             foreach ($request->experiences as $exp) {
                 EmployeeExperience::create([
@@ -90,7 +93,6 @@ class EmployeeController extends Controller
             }
         }
 
-        // Trainings
         if ($request->trainings) {
             foreach ($request->trainings as $training) {
                 EmployeeTraining::create([
@@ -100,7 +102,6 @@ class EmployeeController extends Controller
             }
         }
 
-        // Skills
         if ($request->skills) {
             foreach ($request->skills as $skill) {
                 EmployeeSkill::create([
@@ -111,53 +112,49 @@ class EmployeeController extends Controller
         }
     }
 
-
     public function update(UpdateEmployeeRequest $request, User $employee)
     {
-        return DB::transaction(function () use ($request, $employee) {
+        if (!Gate::allows('manage-employees')) {
+            return response()->json([
+                'message' => 'Unauthorized. Only Admin can update employees.'
+            ], 403);
+        }
 
-            // 1. Update User basic info
+        return DB::transaction(function () use ($request, $employee) {
             $employee->update([
-                'name' => $request->name ?? $employee->name,
-                // 'email'         => $request->email ?? $employee->email,
-                'phone' => $request->phone ?? $employee->phone,
+                'name'          => $request->name ?? $employee->name,
+                'phone'         => $request->phone ?? $employee->phone,
                 'date_of_birth' => $request->date_of_birth ?? $employee->date_of_birth,
-                'address' => $request->address ?? $employee->address,
-                'gender' => $request->gender ?? $employee->gender,
-                'role' => $request->role ?? $employee->role,
+                'address'       => $request->address ?? $employee->address,
+                'gender'        => $request->gender ?? $employee->gender,
+                'role'          => $request->role ?? $employee->role,
             ]);
 
-            // 2. Update or Create Employee record
             $empData = $employee->employee ?? Employee::create(['user_id' => $employee->id]);
 
             $empData->update([
                 'secondary_phone' => $request->secondary_phone,
-                'marital_status' => $request->marital_status,
-                'salary' => $request->salary,
-                'hire_date' => $request->hire_date,
-                'is_active' => $request->is_active ?? $empData->is_active,
+                'marital_status'  => $request->marital_status,
+                'salary'          => $request->salary,
+                'hire_date'       => $request->hire_date,
             ]);
 
-            // 3. Update related data (replace existing)
             $this->syncRelatedData($empData, $request);
 
-            // 4. Handle Dentist specific data
             if ($employee->role === UserRole::DENTIST->value) {
                 Dentist::updateOrCreate(
                     ['employee_id' => $empData->id],
                     [
-                        'specialization_id' => $request->specialization_id,
-                        'work_hours' => $request->work_hours,
-                        'license_number' => $request->license_number,
+                        'specialization_id'   => $request->specialization_id,
+                        'license_number'      => $request->license_number,
                         'years_of_experience' => $request->years_of_experience,
+                        'bio'                 => $request->bio ?? null,
                     ]
                 );
-            } // If role changed from Dentist to something else → delete dentist record
-            // elseif ($employee->wasChanged('role') && $employee->role !== UserRole::DENTIST->value) {
-            //     Dentist::where('employee_id', $empData->id)->delete();
-            // }
+            } elseif ($employee->wasChanged('role') && $employee->role !== UserRole::DENTIST->value) {
+                Dentist::where('employee_id', $empData->id)->delete();
+            }
 
-            // Reload with relations
             $employee->load([
                 'employee.dentist',
                 'employee.educations',
@@ -168,17 +165,13 @@ class EmployeeController extends Controller
 
             return response()->json([
                 'message' => 'Employee updated successfully',
-                'data' => $employee
+                'data'    => new EmployeeResource($employee)
             ]);
         });
     }
 
-    /**
-     * Sync related data (Education, Experience, Training, Skills)
-     */
     private function syncRelatedData(Employee $employee, $request): void
     {
-        // Educations
         if ($request->has('educations')) {
             $employee->educations()->delete();
             foreach ($request->educations as $edu) {
@@ -186,7 +179,6 @@ class EmployeeController extends Controller
             }
         }
 
-        // Experiences
         if ($request->has('experiences')) {
             $employee->experiences()->delete();
             foreach ($request->experiences as $exp) {
@@ -194,7 +186,6 @@ class EmployeeController extends Controller
             }
         }
 
-        // Trainings
         if ($request->has('trainings')) {
             $employee->trainings()->delete();
             foreach ($request->trainings as $training) {
@@ -202,7 +193,6 @@ class EmployeeController extends Controller
             }
         }
 
-        // Skills
         if ($request->has('skills')) {
             $employee->skills()->delete();
             foreach ($request->skills as $skill) {
@@ -213,6 +203,29 @@ class EmployeeController extends Controller
         }
     }
 
+    public function toggle(User $user)
+    {
+        if (!Gate::allows('manage-employees')) {
+            return response()->json([
+                'message' => 'Unauthorized. Only administrators can block or unblock users.'
+            ], 403);
+        }
 
+        $newStatus = !$user->is_active;
+        $user->update(['is_active' => $newStatus]);
 
+        $statusText = $newStatus ? 'activated' : 'blocked';
+
+        return response()->json([
+            'message' => "User has been {$statusText} successfully.",
+            'data' => [
+                'id'        => $user->id,
+                'name'      => $user->name,
+                'email'     => $user->email,
+                'phone'     => $user->phone,
+                'role'      => $user->role?->label(),
+                'is_active' => $user->is_active,
+            ]
+        ]);
+    }
 }

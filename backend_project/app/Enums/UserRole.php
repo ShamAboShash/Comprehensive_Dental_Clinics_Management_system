@@ -7,9 +7,11 @@ enum UserRole: int
     case ADMIN              = 1;
     case DENTIST            = 2;
     case SECRETARY          = 3;
-    case PATIENT            = 4;
+    case PATIENT            = 4;    
     case LAB_MANAGER        = 5;
     case WAREHOUSE_MANAGER  = 6;
+    case TECHNICIAN         = 7;
+    case ASSISTANT          = 8;
 
     /**
      * Arabic label for display (useful in views and API responses)
@@ -23,6 +25,8 @@ enum UserRole: int
             self::PATIENT           => 'مريض',
             self::LAB_MANAGER       => 'مدير المخبر',
             self::WAREHOUSE_MANAGER => 'مدير المستودع',
+            self::TECHNICIAN        => 'فني',
+            self::ASSISTANT         => 'مساعد',
         };
     }
 
@@ -38,6 +42,9 @@ enum UserRole: int
             self::PATIENT           => 'Patient',
             self::LAB_MANAGER       => 'Lab Manager',
             self::WAREHOUSE_MANAGER => 'Warehouse Manager',
+            self::TECHNICIAN        => 'Technician',
+            self::ASSISTANT          => 'Assistant',
+
         };
     }
 
@@ -48,7 +55,8 @@ enum UserRole: int
     public function isPatient(): bool          { return $this === self::PATIENT; }
     public function isLabManager(): bool       { return $this === self::LAB_MANAGER; }
     public function isWarehouseManager(): bool { return $this === self::WAREHOUSE_MANAGER; }
-
+    public function isTechnician(): bool       { return $this === self::TECHNICIAN; }
+    public function isAssistant(): bool         { return $this === self::ASSISTANT; }
     public function isStaff(): bool
     {
         return !$this->isPatient();

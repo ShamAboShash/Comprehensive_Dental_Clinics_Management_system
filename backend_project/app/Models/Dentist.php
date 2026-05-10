@@ -11,11 +11,14 @@ class Dentist extends Model
         'specialization_id',
         'license_number',
         'years_of_experience',
+        'commission_rate',
+        'average_rating',
         'bio',
     ];
 
     protected $casts = [
-        'work_hours' => 'array',
+        // 'work_hours' => 'array',
+        'commission_rate' => 'decimal:2',
     ];
 
     public function employee()
@@ -36,5 +39,10 @@ class Dentist extends Model
     public function workSchedules()
 {
     return $this->hasMany(DentistWorkSchedule::class);
+}
+
+public function ratings()
+{
+    return $this->hasMany(DentistRating::class);
 }
 }

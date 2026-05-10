@@ -6,12 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class EmployeeEducation extends Model
 {
-    protected $fillable = ['employee_id', 
-    'degree', 
-    'institution', 
-    'completion_date', 
+
+protected $table = 'employee_educations';
+    protected $fillable = ['employee_id',
+    'degree',
+    'institution',
+    'completion_date',
     'grade'];
 
-    public function employee() 
+    public function employee()
         { return $this->belongsTo(Employee::class); }
 }

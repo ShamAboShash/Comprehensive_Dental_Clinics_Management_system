@@ -11,20 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('dentists', function (Blueprint $table) {
-    $table->id();
+    Schema::create('dentists', function (Blueprint $table) {
+        $table->id();
+        $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade')->unique();                    // One employee = One dentist profile
+        $table->foreignId('specialization_id')->constrained('specializations')->onDelete('restrict');
+        $table->string('license_number')->nullable()->unique();
+        $table->integer('years_of_experience')->nullable();
+        $table->decimal('average_rating', 3, 2)->default(0.00);
+        $table->decimal('commission_rate', 5, 2)->nullable(); // للطبيب (نسبة)
 
-    $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade')->unique();                    // One employee = One dentist profile
+        $table->text('bio')->nullable();
 
-    $table->foreignId('specialization_id')->constrained('specializations')->onDelete('restrict');
-
-    // $table->json('work_hours')->nullable();           // or separate schedule table later
-    $table->string('license_number')->nullable()->unique();
-    $table->integer('years_of_experience')->nullable();
-    $table->decimal('average_rating', 3, 2)->default(0.00);
-    $table->text('bio')->nullable();
-
-    $table->timestamps();
+        $table->timestamps();
 });
     }
 

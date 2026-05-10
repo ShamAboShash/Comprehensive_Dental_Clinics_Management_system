@@ -14,12 +14,11 @@ return new class extends Migration
        Schema::create('employees', function (Blueprint $table) {
         $table->id();
         $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-        $table->string('secondary_phone')->nullable(); 
-        $table->string('marital_status')->nullable(); 
+        $table->string('secondary_phone')->nullable();
+        $table->string('marital_status')->nullable();
         $table->decimal('salary', 10, 2)->nullable(); // للموظفين براتب مقطوع
-        $table->decimal('commission_rate', 5, 2)->nullable(); // للطبيب (نسبة)
+        // $table->decimal('commission_rate', 5, 2)->nullable(); // للطبيب (نسبة)
         $table->date('hire_date')->nullable();
-        $table->boolean('is_active')->default(true);
         $table->timestamps();
     });
 }
