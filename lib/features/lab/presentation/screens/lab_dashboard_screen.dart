@@ -20,31 +20,42 @@ class _LabDashboardScreenState extends State<LabDashboardScreen> {
 
   final List<SidebarItem> _sidebarItems = const [
     SidebarItem(
-        label: 'لوحة التحكم',
-        icon: Icons.dashboard_rounded,
+        label: 'الصفحة الرئيسية',
+        icon: Icons.home_rounded,
         route: '/lab/dashboard'),
     SidebarItem(
-        label: 'طلبات الأطباء',
-        icon: Icons.assignment_rounded,
+        label: 'الملف الشخصي',
+        icon: Icons.person_outline_rounded,
+        route: '/lab/profile'),
+    SidebarItem(
+        label: 'المواعيد',
+        icon: Icons.calendar_month_outlined,
+        route: '/lab/appointments'),
+    SidebarItem(
+        label: 'المرضى',
+        icon: Icons.people_outline_rounded,
+        route: '/lab/patients'),
+    SidebarItem(
+        label: 'الطلبيات',
+        icon: Icons.shopping_cart_outlined,
         route: '/lab/orders',
         badge: 3),
     SidebarItem(
-        label: 'الفنيون',
-        icon: Icons.people_alt_rounded,
-        route: '/lab/technicians'),
+        label: 'الموظفون',
+        icon: Icons.badge_outlined,
+        route: '/lab/employees'),
     SidebarItem(
         label: 'التقارير',
-        icon: Icons.bar_chart_rounded,
+        icon: Icons.description_outlined,
         route: '/lab/reports'),
     SidebarItem(
-        label: 'الإشعارات',
-        icon: Icons.notifications_rounded,
-        route: '/lab/notifications',
-        badge: 5),
+        label: 'عمليات الجرد',
+        icon: Icons.inventory_2_outlined,
+        route: '/lab/inventory'),
     SidebarItem(
-        label: 'الإعدادات',
-        icon: Icons.settings_rounded,
-        route: '/lab/settings'),
+        label: 'الأطباء',
+        icon: Icons.medical_services_outlined,
+        route: '/lab/doctors'),
   ];
 
   // ===== Mock Orders =====
