@@ -118,7 +118,7 @@ class EmployeeSeeder extends Seeder
                 'phone'         => $data['phone'],
                 'gender'        => $data['gender'],
                 'role'          => $data['role'],
-                'is_active'        => true,
+                'is_active'        => false,
                 'password'      => Hash::make('password'),
 
             ]);

@@ -36,7 +36,7 @@ class PatientSeeder extends Seeder
                 'gender'        => $p['gender'],
                 'role'          => UserRole::PATIENT,
                 'password'      => Hash::make('password'),
-                'is_active'        => true,
+                'is_active'        => false,
             ]);
 
             Patient::create([

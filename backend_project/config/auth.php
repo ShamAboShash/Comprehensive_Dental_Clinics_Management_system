@@ -21,7 +21,11 @@ return [
     // ],
 
     'defaults' => [
-    'guard' => 'web',
+    'guard' => [
+    'web' => [
+        'driver' => 'session',
+        'provider' => 'employees',
+    ]],
     'passwords' => 'users',
 ],
 

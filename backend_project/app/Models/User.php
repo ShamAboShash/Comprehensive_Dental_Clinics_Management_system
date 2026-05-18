@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -12,39 +11,24 @@ use App\Enums\UserRole;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasApiTokens,HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
      */
-
-
-    // Define Role Constants
-    // const ROLE_ADMIN = 1;
-    // const ROLE_DENTIST = 2;
-    // const ROLE_SECRETARY = 3;
-    // const ROLE_PATIENT = 4;
-    // const ROLE_LAB_MANAGER = 5;
-    // const ROLE_WAREHOUSE_MANAGER = 6;
-
-    // // Define Gender Constants
-    // const GENDER_MALE = 1;
-    // const GENDER_FEMALE = 2;
-
     protected $fillable = [
         'name',
         'email',
         'phone',
         'date_of_birth',
         'address',
+        'profile_picture',
         'password',
         'gender',
         'role',
         'is_active'
-
     ];
 
     /**
@@ -66,46 +50,88 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
             'role'              => UserRole::class,
             'gender'            => 'integer',
+            'is_active'         => 'boolean',
         ];
     }
 
-    // Optional: Helper accessor
+    // ====================== Accessors & Helper Methods ======================
+
     public function getRoleLabelAttribute(): string
     {
         return $this->role?->label() ?? 'غير معروف';
     }
 
-    // Example of usage
-    public function isStaff(): bool
-    { return $this->role?->isStaff() ?? false; }
 
-    public function employee()
-     { return $this->hasOne(Employee::class); }
+    public function getProfilePictureUrlAttribute()
+    {
+        if ($this->profile_picture) {
+            return asset('storage/' . $this->profile_picture);
+        }
+        return asset('default-avatar.png'); 
+    }
 
-    public function patient()
-     { return $this->hasOne(Patient::class); }
-
-    public function dentist()
-    { return $this->hasOneThrough(Dentist::class, Employee::class);}
 
     public function isAdmin(): bool
-    { return $this->role === UserRole::ADMIN; }
+    {
+        return $this->role === UserRole::ADMIN;
+    }
 
     public function isDentist(): bool
-    { return $this->role === UserRole::DENTIST; }
+    {
+        return $this->role === UserRole::DENTIST;
+    }
 
     public function isSecretary(): bool
-    { return $this->role === UserRole::SECRETARY; }
+    {
+        return $this->role === UserRole::SECRETARY;
+    }
 
     public function isPatient(): bool
-    { return $this->role === UserRole::PATIENT; }
+    {
+        return $this->role === UserRole::PATIENT;
+    }
 
     public function isLabManager(): bool
-    { return $this->role === UserRole::LAB_MANAGER; }
+    {
+        return $this->role === UserRole::LAB_MANAGER;
+    }
 
     public function isWarehouseManager(): bool
-    { return $this->role === UserRole::WAREHOUSE_MANAGER; }
+    {
+        return $this->role === UserRole::WAREHOUSE_MANAGER;
+    }
+
+    public function isTechnician(): bool
+    {
+        return $this->role === UserRole::TECHNICIAN;
+    }
+    public function isAssistant(): bool
+    {
+        return $this->role === UserRole::ASSISTANT;
+    }
+
+    public function isStaff(): bool
+    {
+        return $this->role?->isStaff() ?? false;
+    }
+
+    // ====================== Relationships ======================
+
+    public function employee()
+    {
+        return $this->hasOne(Employee::class);
+    }
+
+    public function patient()
+    {
+        return $this->hasOne(Patient::class);
+    }
+
+    public function dentist()
+    {
+        return $this->hasOneThrough(Dentist::class, Employee::class);
+    }
 }

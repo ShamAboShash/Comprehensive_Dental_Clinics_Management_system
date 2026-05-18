@@ -32,16 +32,26 @@ class EmployeeController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
+
+
         return DB::transaction(function () use ($request) {
+
+
+            $profilePicturePath = null;
+            if ($request->hasFile('profile_picture')) {
+                $profilePicturePath = $request->file('profile_picture')
+                    ->store('profile_pictures', 'public');
+            }
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
                 'phone' => $request->phone,
                 'date_of_birth' => $request->date_of_birth,
                 'address' => $request->address,
+                'profile_picture' => $profilePicturePath,
                 'gender' => $request->gender,
                 'role' => $request->role,
-                'is_active' => true,
+                'is_active' => false,
             ]);
 
             $employee = Employee::create([

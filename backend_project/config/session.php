@@ -19,7 +19,14 @@ return [
     */
 
     'driver' => env('SESSION_DRIVER', 'database'),
-
+    'lifetime' => env('SESSION_LIFETIME', 120),     // minutes
+    'expire_on_close' => false,
+    'encrypt' => false,
+    'cookie' => env('SESSION_COOKIE', 'dt_teeth_session'),
+    'path' => '/',
+    'domain' => env('SESSION_DOMAIN', null),
+    'secure' => env('SESSION_SECURE_COOKIE', true), // true in production (HTTPS)
+    'same_site' => 'lax',
     /*
     |--------------------------------------------------------------------------
     | Session Lifetime

@@ -17,6 +17,7 @@ return new class extends Migration
     $table->string('phone')->unique();
     $table->date('date_of_birth')->nullable();
     $table->string('address')->nullable();
+    $table->string('profile_picture')->nullable();
 
     // Roles: 1=Admin, 2=Dentist, 3=Secretary, 4=Patient, 5=Lab, 6=Warehouse
     $table->unsignedTinyInteger('role')->default(UserRole::PATIENT->value);
