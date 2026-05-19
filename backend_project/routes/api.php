@@ -11,14 +11,6 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/test-session', function () {
-    session(['test_key' => 'Hello Database Session']);
-    return [
-        'session_id' => session()->getId(),
-        'saved' => session('test_key')
-    ];
-});
-
 // ====================== EMPLOYEE ======================
 
 Route::prefix('employee')->group(function () {
@@ -48,9 +40,6 @@ Route::prefix('patient')->group(function () {
 
         Route::post('/logout', [PatientAuthController::class, 'logout']);
         Route::post('showProfile', [PatientProfileController::class, 'showProfile']);
-
-
-
 
     });
 
