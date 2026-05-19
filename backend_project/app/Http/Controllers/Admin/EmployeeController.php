@@ -36,7 +36,6 @@ class EmployeeController extends Controller
 
         return DB::transaction(function () use ($request) {
 
-
             $profilePicturePath = null;
             if ($request->hasFile('profile_picture')) {
                 $profilePicturePath = $request->file('profile_picture')
