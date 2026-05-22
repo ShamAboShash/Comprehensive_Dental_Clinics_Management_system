@@ -12,11 +12,24 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        
+        // 1. Make API routes stateful (required for Sanctum)
+        $middleware->api(prepend: [
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        ]);
+
+        // 2. Disable CSRF protection for all API routes
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+            'sanctum/csrf-cookie',
+            'employee/*',
+            'patient/*',
+        ]);
+
         $middleware->alias([
             'active' => \App\Http\Middleware\CheckUserIsActive::class,
             'stateful' => $middleware->statefulApi(),
-            // You can add more aliases here
-            // 'admin' => \App\Http\Middleware\AdminMiddleware::class,
+
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

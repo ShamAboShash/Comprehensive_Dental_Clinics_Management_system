@@ -24,7 +24,7 @@ class UserSeeder extends Seeder
             'phone'    => '0910000001',
             'role'     => UserRole::ADMIN,
             'gender'   => 1,
-            'password' => Hash::make('password'),
+            // 'password' => Hash::make('password'),
         ]);
 
         User::create([
@@ -33,7 +33,7 @@ class UserSeeder extends Seeder
             'phone'    => '0915746868',
             'role'     => UserRole::ADMIN,
             'gender'   => 2,
-            'password' => Hash::make('password'),
+            // 'password' => Hash::make('password'),
         ]);
 
 

@@ -134,7 +134,7 @@ class EmployeeAuthController extends Controller
 
 
         // Prevent patients from logging in here
-        if ($user->role === 'patient') {
+        if ($user->role === UserRole::PATIENT) {
             return response()->json([
                 'message' => 'Patients should use the mobile app.'
             ], 403);
