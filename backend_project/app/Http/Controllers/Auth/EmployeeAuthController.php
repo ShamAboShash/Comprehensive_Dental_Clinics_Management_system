@@ -14,7 +14,6 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\LoginRequest;
-
 use Illuminate\Validation\ValidationException;
 
 class EmployeeAuthController extends Controller

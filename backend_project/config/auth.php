@@ -20,14 +20,20 @@ return [
     //     'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
     // ],
 
-    'defaults' => [
-    'guard' => [
-    'web' => [
-        'driver' => 'session',
-        'provider' => 'employees',
-    ]],
-    'passwords' => 'users',
-],
+//     'defaults' => [
+//     'guard' => [
+//     'web' => [
+//         'driver' => 'session',
+//         'provider' => 'employees',
+//     ]],
+//     'passwords' => 'users',
+// ],
+
+
+'defaults' => [
+        'guard'     => 'sanctum',     // ← Changed to sanctum
+        'passwords' => 'users',
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -53,13 +59,15 @@ return [
     //     ],
     // ],
     'guards' => [
-    'web' => [
-        'driver' => 'session',
-        'provider' => 'users',
-    ],
+
 
     'sanctum' => [
         'driver' => 'sanctum',
+        'provider' => 'users',
+    ],
+
+    'web' => [
+        'driver' => 'session',
         'provider' => 'users',
     ],
 ],
