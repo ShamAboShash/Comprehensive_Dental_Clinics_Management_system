@@ -7,7 +7,7 @@ enum UserRole: int
     case ADMIN              = 1;
     case DENTIST            = 2;
     case SECRETARY          = 3;
-    case PATIENT            = 4;    
+    case PATIENT            = 4;
     case LAB_MANAGER        = 5;
     case WAREHOUSE_MANAGER  = 6;
     case TECHNICIAN         = 7;
@@ -60,5 +60,6 @@ enum UserRole: int
     public function isStaff(): bool
     {
         return !$this->isPatient();
+        
     }
 }

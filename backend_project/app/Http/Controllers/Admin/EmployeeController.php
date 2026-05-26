@@ -21,12 +21,9 @@ use Illuminate\Support\Facades\Hash;
 
 class EmployeeController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth:sanctum');
-    }
 
-    public function store(StoreEmployeeRequest $request)
+
+    public function createEmployee(StoreEmployeeRequest $request)
     {
         if (!Gate::allows('manage-employees')) {
             return response()->json(['message' => 'Unauthorized'], 403);
@@ -121,7 +118,7 @@ class EmployeeController extends Controller
         }
     }
 
-    public function update(UpdateEmployeeRequest $request, User $employee)
+    public function updateEmployee(UpdateEmployeeRequest $request, User $employee)
     {
         if (!Gate::allows('manage-employees')) {
             return response()->json([
@@ -212,7 +209,7 @@ class EmployeeController extends Controller
         }
     }
 
-    public function toggle(User $user)
+    public function toggleUser(User $user)
     {
         if (!Gate::allows('manage-employees')) {
             return response()->json([

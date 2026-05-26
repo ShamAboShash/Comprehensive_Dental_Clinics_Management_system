@@ -28,7 +28,8 @@ class User extends Authenticatable
         'password',
         'gender',
         'role',
-        'is_active'
+        'is_active',
+        'email_verified_at'
     ];
 
     /**
@@ -70,7 +71,7 @@ class User extends Authenticatable
         if ($this->profile_picture) {
             return asset('storage/' . $this->profile_picture);
         }
-        return asset('default-avatar.png'); 
+        return asset('default-avatar.png');
     }
 
 

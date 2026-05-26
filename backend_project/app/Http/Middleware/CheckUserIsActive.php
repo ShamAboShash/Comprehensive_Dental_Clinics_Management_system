@@ -10,10 +10,10 @@ class CheckUserIsActive
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (auth()->check() && !auth()->user()->is_active) {
+        if ($request->user() && !$request->user()->is_active) {
 
             // Force logout the blocked user
-            auth()->logout();
+            $request->user()->currentAccessToken()->delete();
 
             return response()->json([
                 'success' => false,

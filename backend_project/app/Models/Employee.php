@@ -18,6 +18,11 @@ class Employee extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function dentist()
+    {
+        return $this->hasOne(Dentist::class);
+    }
+
     public function educations() { return $this->hasMany(EmployeeEducation::class); }
     public function experiences() { return $this->hasMany(EmployeeExperience::class); }
     public function trainings() { return $this->hasMany(EmployeeTraining::class); }

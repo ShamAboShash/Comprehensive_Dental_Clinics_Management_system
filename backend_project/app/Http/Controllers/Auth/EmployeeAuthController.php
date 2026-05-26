@@ -6,21 +6,28 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\EmployeeActivateRequest;
 use App\Http\Requests\EmployeeSetPasswordRequest;
+use App\Http\Requests\EmployeeVerifyCodeRequest;
 use App\Mail\VerificationMail;
 use App\Models\User;
 use App\Models\VerificationCode;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\LoginRequest;
-use Illuminate\Validation\ValidationException;
 
 class EmployeeAuthController extends Controller
 {
 
     public function sendVerification(EmployeeActivateRequest $request)
     {
+
+    // if (!Gate::allows('send-employee-verification')) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'غير مصرح لك بالوصول.'
+    //         ], 403);
+    //     }
         $user = User::where('email', $request->email)->first();
 
         if (!$user) {
@@ -66,58 +73,109 @@ class EmployeeAuthController extends Controller
     }
 
 
-    public function setPassword(EmployeeSetPasswordRequest $request)
-    {
-        $user = User::where('email', $request->email)->first();
+    public function verifyCode(EmployeeVerifyCodeRequest $request)
+{
 
-        if (!$user || $user->password !== null) {
-            return response()->json([
-                'message' => 'This account is already activated.'], 422);
-        }
+    // if (!Gate::allows('verify-employee-code')) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'غير مصرح لك بالوصول.'
+    //         ], 403);
+    //     }
+    $user = User::where('email', $request->email)->first();
 
-        // Find valid code
-        $verification = VerificationCode::where('email', $user->email)
-            ->where('code', $request->verification_code)
-            ->where('expires_at', '>', now())
-            ->first();
+    if (!$user) {
+        return response()->json([
+            'message' => 'No account found with this email.'
+        ], 404);
+    }
 
-        if (!$verification) {
-            return response()->json([
-                'message' => 'Invalid or expired verification code.'
-            ], 422);
-        }
+    if ($user->password !== null) {
+        return response()->json([
+            'message' => 'This account is already activated.'
+        ], 422);
+    }
 
-        // Activate account
-        $user->update([
-            'password'  => Hash::make($request->password),
-            'is_active' => true,
+    $verification = VerificationCode::where('email', $user->email)
+        ->where('code', $request->verification_code)
+        ->where('expires_at', '>', now())
+        ->first();
+
+    if (!$verification) {
+        return response()->json([
+            'message' => 'Invalid or expired verification code.'
+        ], 422);
+    }
+
+    $user->update([
             'email_verified_at'  => now()
         ]);
 
-        // Delete used code
-        VerificationCode::where('email', $user->email)->delete();
+    return response()->json([
+        'message' => 'Verification code is valid. You may now set your password.',
+    ]);
+}
 
-        // This creates the session
-       $user->tokens()->delete();
 
-        // Create new token
-        $token = $user->createToken('employee-auth-token', ['*'])->plainTextToken;
+public function setPassword(EmployeeSetPasswordRequest $request)
+{
 
+    // if (!Gate::allows('set-employee-password')) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'غير مصرح لك بالوصول.'
+    //         ], 403);
+    //     }
+
+    $user = User::where('email', $request->email)->first();
+
+    if (!$user) {
         return response()->json([
-        'message' => 'Account activated and logged in successfully.',
+            'message' => 'No account found with this email.'
+        ], 404);
+    }
+
+    if ($user->password !== null) {
+        return response()->json([
+            'message' => 'This account is already activated.'
+        ], 422);
+    }
+
+
+    if ($user->email_verified_at === null) {
+        return response()->json([
+            'message' => 'you have not verified your email yet.'
+        ], 422);
+    }
+
+    $user->update([
+        'password'          => Hash::make($request->password),
+        'is_active'         => true,
+    ]);
+
+    VerificationCode::where('email', $user->email)->delete();
+
+    $user->tokens()->delete();
+    $token = $user->createToken('employee-auth-token')->plainTextToken;
+
+    return response()->json([
+        'message' => 'Account activated successfully.',
         'user'    => [
             'id'    => $user->id,
             'name'  => $user->name,
             'email' => $user->email,
-            'role'  => $user->role->label() ,
-            'token' => $token
-            ]
-        ]);
-
-    }
+            'role'  => $user->role->value,
+        ],
+        'token'      => $token,
+        'token_type' => 'Bearer',
+    ]);
+}
 
     public function login(LoginRequest $request)
     {
+
+
+
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
@@ -132,13 +190,12 @@ class EmployeeAuthController extends Controller
             ], 403);
         }
 
-
-        // Prevent patients from logging in here
-        if ($user->role === UserRole::PATIENT) {
-            return response()->json([
-                'message' => 'Patients should use the mobile app.'
-            ], 403);
-        }
+        if (!$user->isStaff()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Patients should use the mobile app.'
+        ], 403);
+    }
 
         $user->tokens()->delete();
 
@@ -150,7 +207,7 @@ class EmployeeAuthController extends Controller
                 'id'         => $user->id,
                 'name'       => $user->name,
                 'email'      => $user->email,
-                'role'       => $user->role->label() ,
+                'role'       => $user->role->value ,
                 'is_active'  => $user->is_active,
                 'token'   => $token,
                 'token_type' => 'Bearer',
@@ -167,5 +224,58 @@ class EmployeeAuthController extends Controller
         return response()->json(['message' => 'Logged out successfully']);
 
     }
+
+
+
+
+    // public function setPassword(EmployeeSetPasswordRequest $request)
+    // {
+    //     $user = User::where('email', $request->email)->first();
+
+    //     if (!$user || $user->password !== null) {
+    //         return response()->json([
+    //             'message' => 'This account is already activated.'], 422);
+    //     }
+
+    //     // Find valid code
+    //     $verification = VerificationCode::where('email', $user->email)
+    //         ->where('code', $request->verification_code)
+    //         ->where('expires_at', '>', now())
+    //         ->first();
+
+    //     if (!$verification) {
+    //         return response()->json([
+    //             'message' => 'Invalid or expired verification code.'
+    //         ], 422);
+    //     }
+
+    //     // Activate account
+    //     $user->update([
+    //         'password'  => Hash::make($request->password),
+    //         'is_active' => true,
+    //         'email_verified_at'  => now()
+    //     ]);
+
+    //     // Delete used code
+    //     VerificationCode::where('email', $user->email)->delete();
+
+    //     // This creates the session
+    //    $user->tokens()->delete();
+
+    //     // Create new token
+    //     $token = $user->createToken('employee-auth-token', ['*'])->plainTextToken;
+
+    //     return response()->json([
+    //     'message' => 'Account activated and logged in successfully.',
+    //     'user'    => [
+    //         'id'    => $user->id,
+    //         'name'  => $user->name,
+    //         'email' => $user->email,
+    //         'role'  => $user->role->label() ,
+    //         'token' => $token
+    //         ]
+    //     ]);
+
+    // }
 
 }

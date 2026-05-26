@@ -15,6 +15,7 @@ use App\Models\PatientChronicDisease;
 use App\Models\PatientMedication;
 use App\Models\User;
 use App\Models\VerificationCode;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
@@ -115,7 +116,7 @@ class PatientAuthController extends Controller
                 'id'    => $user->id,
                 'name'  => $user->name,
                 'email' => $user->email,
-                'role'  => $user->role->label(),
+                'role'  => $user->role->value,
             ],
         ], 201);
     }
@@ -206,7 +207,7 @@ class PatientAuthController extends Controller
             'id'    => $user->id,
             'name'  => $user->name,
             'email' => $user->email,
-            'role'  => $user->role->label(),
+            'role'  => $user->role->value,
         ],
         'token'       => $newToken,
         'token_type'  => 'Bearer',
@@ -224,16 +225,10 @@ class PatientAuthController extends Controller
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
-
-        // if (!$user->is_active) {
-        //     return response()->json([
-        //         'message' => 'Your account has been blocked. Please contact support.'
-        //     ], 403);
-        // }
-
-        if ($user->role !== UserRole::PATIENT) {
+        if (!Gate::allows('login-patient')) {
             return response()->json([
-                'message' => 'This login is for patients only.'
+                'success' => false,
+                'message' => 'غير مصرح لك بالوصول.'
             ], 403);
         }
 
@@ -247,7 +242,7 @@ class PatientAuthController extends Controller
                 'id'    => $user->id,
                 'name'  => $user->name,
                 'email' => $user->email,
-                'role'  => $user->role->label(),
+                'role'  => $user->role->value,
             ],
             'token'       => $token,
             'token_type'  => 'Bearer',
@@ -265,22 +260,12 @@ public function logout(Request $request)
         ], 401);
     }
 
-    try {
-        // Delete current token only
         $request->user()->currentAccessToken()->delete();
-
-        // OR delete all tokens:
-        // $user->tokens()->delete();
 
         return response()->json([
             'message' => 'Logged out successfully.'
         ]);
 
-    } catch (\Exception $e) {
-        return response()->json([
-            'message' => 'Logout failed. Please try again.'
-        ], 500);
-    }
 }
     // public function logout(Request $request)
     // {
