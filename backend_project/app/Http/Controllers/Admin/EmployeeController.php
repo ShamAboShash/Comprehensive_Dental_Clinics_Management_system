@@ -7,12 +7,15 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreEmployeeRequest;
 use App\Http\Requests\UpdateEmployeeRequest;
 use App\Http\Resources\EmployeeResource;
+use App\Http\Resources\EmployeeProfileResource;
+use App\Http\Resources\PatientProfileResource;
 use App\Models\Dentist;
 use App\Models\Employee;
 use App\Models\EmployeeEducation;
 use App\Models\EmployeeExperience;
 use App\Models\EmployeeSkill;
 use App\Models\EmployeeTraining;
+use App\Models\Patient;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -209,18 +212,26 @@ class EmployeeController extends Controller
         }
     }
 
-    public function toggleUser(User $user)
+    public function toggleUser(Request $request, $id)
     {
         if (!Gate::allows('manage-employees')) {
             return response()->json([
                 'message' => 'Unauthorized. Only administrators can block or unblock users.'
             ], 403);
         }
+        $user = User::findOrFail($id);
 
+            // Optional: Prevent deactivating admin or yourself
+            if ($user->id === auth()->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'لا يمكنك تعطيل حسابك الخاص.'
+                ], 403);
+            }
         $newStatus = !$user->is_active;
         $user->update(['is_active' => $newStatus]);
 
-        $statusText = $newStatus ? 'activated' : 'blocked';
+        $statusText = $newStatus ? 'تفعيل' : 'تعطيل';
 
         return response()->json([
             'message' => "User has been {$statusText} successfully.",
@@ -229,9 +240,60 @@ class EmployeeController extends Controller
                 'name'      => $user->name,
                 'email'     => $user->email,
                 'phone'     => $user->phone,
-                'role'      => $user->role?->label(),
+                'role'      => $user->role->value,
                 'is_active' => $user->is_active,
             ]
         ]);
     }
+
+
+ public function showEmployeeDetails($employeeId)
+{
+    $employee = Employee::with([
+        'user',
+        'educations',
+        'experiences',
+        'skills',
+        'trainings'           
+    ])->findOrFail($employeeId);
+
+    // Authorization using Gate
+    if (!Gate::allows('view-employee-details', $employee)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'غير مصرح لك بالوصول. هذا الإجراء للمدراء فقط.'
+        ], 403);
+    }
+
+    return response()->json([
+        'success' => true,
+        'data'    => new EmployeeProfileResource($employee)
+    ], 200);
+}
+
+public function showPatientProfile($patientId)
+{
+    $patient = Patient::with([
+        'user',
+        'allergies',
+        'chronicDiseases.category',      // if you have category relation
+        'medications.medication'         // adjust if your relation name is different
+    ])->findOrFail($patientId);
+
+    // Authorization using Gate
+    if (!Gate::allows('view-patient-profile', $patient)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'غير مصرح لك بالوصول. هذا الإجراء مخصص للأطباء فقط.'
+        ], 403);
+    }
+
+    return response()->json([
+        'success' => true,
+        'data'    => new PatientProfileResource($patient)
+    ], 200);
+}
+
+
+
 }

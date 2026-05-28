@@ -18,11 +18,14 @@ use Illuminate\Support\Facades\Route;
 
 // ====================== SHARED-APIs ======================
 
+
+    Route::get('/roles', [ShowThingsController::class, 'roles']);
+
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     Route::get('/medications', [ShowThingsController::class, 'medications']);
     Route::get('/specializations', [ShowThingsController::class, 'specializations']);
-    Route::get('/roles', [ShowThingsController::class, 'roles']);
+    Route::get('/diseaseCategories', [ShowThingsController::class, 'diseaseCategories']);
     Route::get('/showAllEmployees', [EmployeeProfileController::class, 'showAllEmployees']);
     Route::get('/showAllPatients', [PatientProfileController::class, 'showAllPatients']);
 
@@ -79,8 +82,10 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'active'])->group(function (
 
     Route::get('/showProfile', [AdminProfileController::class, 'showProfile']);
     Route::post('/createEmployee', [EmployeeController::class, 'createEmployee']);
-    Route::put('/updateEmployee/{employee}', [EmployeeController::class, 'updateEmployee']);
-    Route::patch('/toggleUser/{user}', [EmployeeController::class, 'toggleUser']);
+    Route::post('/updateEmployee/{employee}', [EmployeeController::class, 'updateEmployee']);
+    Route::post('/toggleUser/{user}', [EmployeeController::class, 'toggleUser']);
+    Route::get('/showEmployeeDetails/{employeeId}', [EmployeeController::class, 'showEmployeeDetails']);
+    Route::get('/showPatientProfile/{patientId}', [EmployeeController::class, 'showPatientProfile']);
 
 });
 

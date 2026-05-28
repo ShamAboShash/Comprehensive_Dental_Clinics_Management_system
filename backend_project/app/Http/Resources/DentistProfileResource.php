@@ -62,6 +62,13 @@ class DentistProfileResource extends JsonResource
                 'end_date'   => $exp->end_date,
             ]),
 
+            'trainings' => $this->employee->trainings->map(fn($t) => [
+                'id'           => $t->id,
+                'course_title' => $t->course_title,
+                'trainer'      => $t->trainer,
+                'course_date'  => $t->course_date,
+            ]),
+
             'skills' => $this->employee->skills->pluck('skill_name'),
         ];
     }

@@ -109,5 +109,14 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('send-employee-verification', function (User $user) {
                 return $user->isStaff();
         });
-    }
+
+
+        Gate::define('view-employee-details', function ($user, $employee) {
+            return $user->isAdmin();
+        });
+
+        Gate::define('view-patient-profile', function ($user, $patient) {
+            return $user->isAdmin() || $user->isDentist();
+        });
+            }
 }

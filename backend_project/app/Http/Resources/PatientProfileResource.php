@@ -70,7 +70,7 @@ class PatientChronicDiseaseResource extends JsonResource
     {
         return [
             'id'           => $this->id,
-            'category'     => $this->category,
+            'category'     => $this->category?->name,
             'problem_name' => $this->problem_name,
             'details'      => $this->details,
             'severity'     => $this->severity,
@@ -87,10 +87,11 @@ class PatientMedicationResource extends JsonResource
             'dosage'      => $this->dosage,
             'frequency'   => $this->frequency,
             'notes'       => $this->notes,
-            'medication'  => $this->whenLoaded('medication', fn() => [
-                'id'   => $this->medication?->id,
-                'name' => $this->medication?->name,
-            ]),
+            'medication'  => $this->medication?->scientific_name,
+            // 'medication'  => $this->whenLoaded('medication', fn() => [
+            //     'id'   => $this->medication?->id,
+            //     'name' => $this->medication?->name,
+            // ]),
         ];
     }
 }

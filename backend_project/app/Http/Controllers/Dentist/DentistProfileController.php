@@ -31,7 +31,8 @@ class DentistProfileController extends Controller
         $dentist = Dentist::with(['specialization', 'workSchedules', 'employee.user',
         'employee.educations',
         'employee.experiences',
-        'employee.skills', ])
+        'employee.skills',
+        'employee.trainings', ])
             ->whereHas('employee', fn($q) => $q->where('user_id', $user->id))
             ->first();
 
@@ -84,7 +85,7 @@ class DentistProfileController extends Controller
             }
         }
 //ask if the frontend want this response or not
-        $patient->load(['allergies', 'chronicDiseases', 'medications']);
+        $patient->load(['allergies', 'chronicDiseases.category', 'medications']);
 
         return response()->json([
         'success' => true,
@@ -97,13 +98,13 @@ class DentistProfileController extends Controller
             ]),
             'chronic_diseases' => $patient->chronicDiseases->map(fn($d) => [
                 'id'           => $d->id,
-                'category'     => $d->category,
+                'category'     => $d->category->name,
                 'problem_name' => $d->problem_name,
                 'severity'     => $d->severity,
             ]),
             'medications'       => $patient->medications->map(fn($m) => [
                 'id'            => $m->id,
-                'medication_id' => $m->medication_id,
+                'medication_name' => $m->name,
                 'dosage'        => $m->dosage,
                 'frequency'     => $m->frequency,
             ]),

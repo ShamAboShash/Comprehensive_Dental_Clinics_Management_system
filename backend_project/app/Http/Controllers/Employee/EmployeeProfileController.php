@@ -25,7 +25,7 @@ class EmployeeProfileController extends Controller
             ], 403);
         }
 
-        $employee = Employee::with(['user', 'educations', 'experiences', 'skills'])
+        $employee = Employee::with(['user', 'educations', 'experiences', 'skills','trainings'])
             ->where('user_id', $user->id)
             ->first();
 

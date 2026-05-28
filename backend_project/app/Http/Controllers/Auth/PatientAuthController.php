@@ -260,10 +260,10 @@ public function logout(Request $request)
         ], 401);
     }
 
-        $request->user()->currentAccessToken()->delete();
+        $request->user()->tokens()->delete();
 
         return response()->json([
-            'message' => 'Logged out successfully.'
+            'message' => 'تم تسجيل الخروج من جميع الأجهزة بنجاح.'
         ]);
 
 }

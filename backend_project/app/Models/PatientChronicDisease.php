@@ -8,7 +8,7 @@ class PatientChronicDisease extends Model
 {
   protected $fillable = [
         'patient_id',
-        'category',
+        'category_id',
         'problem_name',
         'details',
         'severity',
@@ -17,5 +17,10 @@ class PatientChronicDisease extends Model
     public function patient()
     {
         return $this->belongsTo(Patient::class);
+    }
+
+    public function category() // ✅ add this
+    {
+        return $this->belongsTo(DiseaseCategory::class, 'category_id');
     }
 }

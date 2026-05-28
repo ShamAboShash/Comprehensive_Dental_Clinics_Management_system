@@ -17,7 +17,10 @@ return new class extends Migration
                   ->constrained('patients')
                   ->onDelete('cascade');
 
-            $table->string('category');           // e.g., 'anesthesia', 'dental', 'bleeding', 'allergy', 'chronic'
+            $table->foreignId('category_id')
+                ->nullable()
+                ->constrained('disease_categories')
+                ->onDelete('set null');
             $table->string('problem_name');       // e.g., 'Gum Bleeding', 'Allergic to Lidocaine'
             $table->text('details')->nullable();  // Extra description
             $table->string('severity')->nullable(); // Mild, Moderate, Severe
@@ -25,7 +28,9 @@ return new class extends Migration
             $table->timestamps();
 
             // Prevent duplicate problems for the same patient
-            $table->unique(['patient_id', 'category', 'problem_name']);
+            $table->unique(['patient_id', 'category_id', 'problem_name'],
+                'pcd_unique_patient'   // Short name
+            );
         });
     }
 

@@ -39,7 +39,7 @@ class PatientProfileController extends Controller
         $patient = Patient::with([
             'user',
             'allergies',
-            'chronicDiseases',
+            'chronicDiseases.category',
             'medications.medication'
         ])->where('user_id', $user->id)->first();
 

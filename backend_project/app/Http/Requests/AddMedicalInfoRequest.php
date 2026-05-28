@@ -27,7 +27,7 @@ class AddMedicalInfoRequest extends FormRequest
             'allergies.*'                     => ['string'],
 
             'chronic_diseases'                => ['array'],
-            'chronic_diseases.*.category'     => ['required', 'string'],
+            'chronic_diseases.*.category_id' => ['required', 'exists:disease_categories,id'],
             'chronic_diseases.*.problem_name' => ['required', 'string'],
             'chronic_diseases.*.severity'     => ['nullable', 'string'],
 

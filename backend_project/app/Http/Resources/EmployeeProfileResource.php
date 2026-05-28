@@ -48,6 +48,13 @@ class EmployeeProfileResource extends JsonResource
                 ];
             }),
 
+            'trainings' => $this->trainings->map(fn($t) => [
+                'id'           => $t->id,
+                'course_title' => $t->course_title,
+                'trainer'      => $t->trainer,
+                'course_date'  => $t->course_date,
+            ]),
+
             // المهارات
             'skills' => $this->skills->pluck('skill_name'),
         ];

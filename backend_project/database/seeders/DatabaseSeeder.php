@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
     {
 
         $this->call([
+            DiseaseCategorySeeder::class,
             SpecializationSeeder::class,
             UserSeeder::class,
             MedicationSeeder::class,
@@ -29,7 +30,7 @@ class DatabaseSeeder extends Seeder
             PatientAllergySeeder::class,
             PatientChronicDiseaseSeeder::class,
             PatientMedicationSeeder::class,
-            DentistSeeder::class,   
+            DentistSeeder::class,
         ]);
 
         // User::factory(10)->create();

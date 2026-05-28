@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Generals;
 use App\Http\Controllers\Controller;
 use App\Models\Medication;
 use App\Models\Specialization;
+use App\Models\DiseaseCategory;
 use App\Enums\UserRole;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -28,7 +29,7 @@ class ShowThingsController extends Controller
             'success' => true,
             'data'    => $medications->map(fn($med) => [
             'id'   => $med->id,
-            'name' => $med->name,
+            'name' => $med->scientific_name,
         ]),
         ]);
     }
@@ -55,12 +56,12 @@ class ShowThingsController extends Controller
 
     public function roles(Request $request)
     {
-        if (!Gate::allows('view-roles')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'غير مصرح لك بالوصول.'
-            ], 403);
-        }
+        // if (!Gate::allows('view-roles')) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'غير مصرح لك بالوصول.'
+        //     ], 403);
+        // }
 
         $roles = collect(UserRole::cases());
 
@@ -72,4 +73,25 @@ class ShowThingsController extends Controller
              ]),
         ]);
     }
+
+
+    public function diseaseCategories(Request $request)
+{
+    if (!$request->user()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'غير مصرح لك بالوصول.'
+        ], 403);
+    }
+
+    $categories = DiseaseCategory::orderBy('name')->get();
+
+    return response()->json([
+        'success' => true,
+        'data'    => $categories->map(fn($cat) => [
+            'id'      => $cat->id,
+            'name'    => $cat->name,
+        ]),
+    ]);
+}
 }
