@@ -109,7 +109,7 @@ class PatientAuthController extends Controller
             }
         }
 
-        $this->sendPatientVerificationCode($request);
+        $this->sendVerification($request);
         return response()->json([
             'message' => 'Patient registered successfully. Please check your email to verify your account.',
             'user'    => [
