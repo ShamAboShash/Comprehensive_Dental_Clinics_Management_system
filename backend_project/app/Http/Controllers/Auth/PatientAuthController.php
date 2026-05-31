@@ -123,7 +123,7 @@ class PatientAuthController extends Controller
 
 
 
-    public function sendPatientVerificationCode(Request $request)
+    public function sendVerification(Request $request)
 {
     // Fetch the user first
     $user = User::where('email', $request->email)->first();

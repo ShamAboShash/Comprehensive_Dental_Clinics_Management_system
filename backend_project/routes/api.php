@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\EmployeeAuthController;
 use App\Http\Controllers\Auth\PatientAuthController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Dentist\DentistProfileController;
@@ -18,8 +19,13 @@ use Illuminate\Support\Facades\Route;
 
 // ====================== SHARED-APIs ======================
 
+Route::prefix('forgotPassword')->group(function () {
+    Route::post('/sendCode',      [ForgotPasswordController::class, 'sendCode']);
+    Route::post('/verifyCode',    [ForgotPasswordController::class, 'verifyCode']);
+    Route::post('/resetPassword', [ForgotPasswordController::class, 'resetPassword']);
+});
 
-    Route::get('/roles', [ShowThingsController::class, 'roles']);
+Route::get('/roles', [ShowThingsController::class, 'roles']);
 
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
@@ -28,7 +34,6 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('/diseaseCategories', [ShowThingsController::class, 'diseaseCategories']);
     Route::get('/showAllEmployees', [EmployeeProfileController::class, 'showAllEmployees']);
     Route::get('/showAllPatients', [PatientProfileController::class, 'showAllPatients']);
-
 
 });
 
@@ -58,7 +63,7 @@ Route::prefix('patient')->group(function () {
 
     Route::post('/register', [PatientAuthController::class, 'register']);
     Route::post('/login', [PatientAuthController::class, 'login']);
-    Route::post('/sendPatientVerificationCode', [PatientAuthController::class, 'sendPatientVerificationCode']);
+    Route::post('/sendVerification', [PatientAuthController::class, 'sendVerification']);
     Route::post('/verifyEmail', [PatientAuthController::class, 'verifyEmail']);
 
     Route::middleware(['auth:sanctum', 'active'])->group(function () {

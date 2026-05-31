@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Gate;
 
 class EmployeeProfileController extends Controller
 {
-    public function showProfile(Request $request): JsonResponse
+    public function showProfile(Request $request)
     {
         $user = $request->user();
 
@@ -43,7 +43,7 @@ class EmployeeProfileController extends Controller
 
 
 
-    public function showAllEmployees(Request $request): JsonResponse
+    public function showAllEmployees(Request $request)
     {
         if (!Gate::allows('view-employees')) {
             return response()->json([
@@ -52,7 +52,7 @@ class EmployeeProfileController extends Controller
             ], 403);
         }
 
-        $employees = User::whereNotIn('role', [UserRole::PATIENT->value,UserRole::ADMIN->value,])->get();
+        $employees = User::whereNotIn('role', [UserRole::PATIENT->value,UserRole::ADMIN->value,UserRole::DENTIST->value,])->get();
 
         return response()->json([
             'success' => true,
