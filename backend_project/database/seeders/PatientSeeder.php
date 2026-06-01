@@ -27,7 +27,12 @@ class PatientSeeder extends Seeder
             ['name' => 'كريم الشامي', 'phone' => '0951000012', 'email' => 'kareem.alshami@gmail.com', 'gender' => 1, 'dob' => '1993-10-27'],
         ];
 
+
         foreach ($patients as $p) {
+            $profilePic = ($p['gender'] == 1)
+                ? 'profile_pictures/male.png'
+                : 'profile_pictures/female.png';
+
             $user = User::create([
                 'name'          => $p['name'],
                 'email'         => $p['email'],
@@ -37,6 +42,7 @@ class PatientSeeder extends Seeder
                 'role'          => UserRole::PATIENT,
                 'password'      => Hash::make('password'),
                 'is_active'        => false,
+                'profile_picture' => $profilePic,
             ]);
 
             Patient::create([

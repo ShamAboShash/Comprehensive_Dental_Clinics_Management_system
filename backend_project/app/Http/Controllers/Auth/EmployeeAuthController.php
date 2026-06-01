@@ -60,7 +60,7 @@ class EmployeeAuthController extends Controller
         VerificationCode::updateOrCreate([
             'email'       => $user->email],[
             'code'        => $code,
-            'expires_at'  => now()->addMinutes(2),
+            'expires_at'  => now()->addMinutes(5),
             'attempts'    => $newAttempts,
         ]);
 
@@ -68,7 +68,7 @@ class EmployeeAuthController extends Controller
         Mail::to($user->email)->send(new VerificationMail($user, $code));
 
         return response()->json([
-            'message' => 'Verification code has been sent to your email. Code is valid for 2 minutes.'
+            'message' => 'Verification code has been sent to your email. Code is valid for 5 minutes.'
         ]);
     }
 
@@ -76,12 +76,7 @@ class EmployeeAuthController extends Controller
     public function verifyCode(EmployeeVerifyCodeRequest $request)
 {
 
-    // if (!Gate::allows('verify-employee-code')) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'غير مصرح لك بالوصول.'
-    //         ], 403);
-    //     }
+
     $user = User::where('email', $request->email)->first();
 
     if (!$user) {

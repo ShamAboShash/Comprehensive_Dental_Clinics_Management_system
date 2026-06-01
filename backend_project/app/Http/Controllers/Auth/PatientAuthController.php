@@ -37,6 +37,24 @@ class PatientAuthController extends Controller
             ], 403);
         }
 
+
+        $profilePicturePath = null;
+
+        if ($request->hasFile('profile_picture')) {
+            $image = $request->file('profile_picture');
+            $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+            $profilePicturePath = $image->storeAs('profile_pictures', $filename, 'public');
+        } else {
+            // Set default image based on gender
+            $gender = $request->gender; // Assuming 1 = Male, 2 = Female
+
+            if ($gender == 1) {
+                $profilePicturePath = 'profile_pictures/male.png';
+            } else {
+                $profilePicturePath = 'profile_pictures/female.png';
+            }
+        }
+
         // 1. Create User
             $userData = [
             'name'          => $request->name,
@@ -48,15 +66,16 @@ class PatientAuthController extends Controller
             'role'          => UserRole::PATIENT,
             'password'      => Hash::make($request->password),
             'is_active'     => false,
+            'profile_picture' => $profilePicturePath,
         ];
 
-        // Handle Profile Picture Upload
-        if ($request->hasFile('profile_picture')) {
-            $image = $request->file('profile_picture');
-            $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-            $path = $image->storeAs('profile_pictures', $filename, 'public');
-            $userData['profile_picture'] = $path;
-        }
+        // // Handle Profile Picture Upload
+        // if ($request->hasFile('profile_picture')) {
+        //     $image = $request->file('profile_picture');
+        //     $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+        //     $path = $image->storeAs('profile_pictures', $filename, 'public');
+        //     $userData['profile_picture'] = $path;
+        // }
 
         $user = User::create($userData);
 
@@ -74,40 +93,40 @@ class PatientAuthController extends Controller
         ]);
 
         // 3. Store Allergies
-        if ($request->has('allergies') && is_array($request->allergies)) {
-            foreach ($request->allergies as $allergy) {
-                PatientAllergy::create([
-                    'patient_id'   => $patient->id,
-                    'allergy_name' => $allergy['allergy_name'] ?? '',
-                ]);
-            }
-        }
+        // if ($request->has('allergies') && is_array($request->allergies)) {
+        //     foreach ($request->allergies as $allergy) {
+        //         PatientAllergy::create([
+        //             'patient_id'   => $patient->id,
+        //             'allergy_name' => $allergy['allergy_name'] ?? '',
+        //         ]);
+        //     }
+        // }
 
         // 4. Store Chronic Diseases
-        if ($request->has('chronic_diseases') && is_array($request->chronic_diseases)) {
-            foreach ($request->chronic_diseases as $disease) {
-                PatientChronicDisease::create([
-                    'patient_id'   => $patient->id,
-                    'category'     => $disease['category'] ?? null,
-                    'problem_name' => $disease['problem_name'] ?? '',
-                    'details'      => $disease['details'] ?? null,
-                    'severity'     => $disease['severity'] ?? null,
-                ]);
-            }
-        }
+        // if ($request->has('chronic_diseases') && is_array($request->chronic_diseases)) {
+        //     foreach ($request->chronic_diseases as $disease) {
+        //         PatientChronicDisease::create([
+        //             'patient_id'   => $patient->id,
+        //             'category'     => $disease['category'] ?? null,
+        //             'problem_name' => $disease['problem_name'] ?? '',
+        //             'details'      => $disease['details'] ?? null,
+        //             'severity'     => $disease['severity'] ?? null,
+        //         ]);
+        //     }
+        // }
 
         // 5. Store Medications
-        if ($request->has('medications') && is_array($request->medications)) {
-            foreach ($request->medications as $med) {
-                PatientMedication::create([
-                    'patient_id'   => $patient->id,
-                    'medication_id'=> $med['medication_id'] ?? null,
-                    'dosage'       => $med['dosage'] ?? null,
-                    'frequency'    => $med['frequency'] ?? null,
-                    'notes'        => $med['notes'] ?? null,
-                ]);
-            }
-        }
+        // if ($request->has('medications') && is_array($request->medications)) {
+        //     foreach ($request->medications as $med) {
+        //         PatientMedication::create([
+        //             'patient_id'   => $patient->id,
+        //             'medication_id'=> $med['medication_id'] ?? null,
+        //             'dosage'       => $med['dosage'] ?? null,
+        //             'frequency'    => $med['frequency'] ?? null,
+        //             'notes'        => $med['notes'] ?? null,
+        //         ]);
+        //     }
+        // }
 
         $this->sendVerification($request);
         return response()->json([
@@ -117,6 +136,7 @@ class PatientAuthController extends Controller
                 'name'  => $user->name,
                 'email' => $user->email,
                 'role'  => $user->role->value,
+                'profile_picture' => $user->profile_picture_url,
             ],
         ], 201);
     }
@@ -159,7 +179,7 @@ class PatientAuthController extends Controller
         ['email' => $user->email],
         [
             'code'       => $code,
-            'expires_at' => now()->addMinutes(2),   // Better to give more time
+            'expires_at' => now()->addMinutes(5),   // Better to give more time
             'attempts'   => $newAttempts,
         ]
     );
@@ -168,7 +188,7 @@ class PatientAuthController extends Controller
     Mail::to($user->email)->send(new VerificationMail($user, $code));
 
     return response()->json([
-        'message' => 'Verification code has been sent to your email. Code is valid for 2 minutes.'
+        'message' => 'Verification code has been sent to your email. Code is valid for 5 minutes.'
     ]);
 }
 

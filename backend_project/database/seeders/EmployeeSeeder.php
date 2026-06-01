@@ -56,7 +56,7 @@ class EmployeeSeeder extends Seeder
                 'phone' => '0931000004',
                 'email' => 'yaser.warehouse@clinic.com',
                 'gender' => 1,
-                'role' => UserRole::WAREHOUSE_MANAGER,
+                'role' => UserRole::TECHNICIAN,
                 'secondary_phone' => '0932000004',
                 'marital_status' => 'single',
                 'salary' => 1350000,
@@ -80,7 +80,7 @@ class EmployeeSeeder extends Seeder
                 'phone' => '0931000006',
                 'email' => 'mahmoud.assistant@clinic.com',
                 'gender' => 1,
-                'role' => UserRole::SECRETARY,
+                'role' => UserRole::TECHNICIAN,
                 'secondary_phone' => '0932000006',
                 'marital_status' => 'married',
                 'salary' => 1250000,
@@ -112,6 +112,10 @@ class EmployeeSeeder extends Seeder
 
         foreach ($employeesData as $data) {
             // Create User
+            $profilePic = ($data['gender'] == 1)
+                ? 'profile_pictures/male.png'
+                : 'profile_pictures/female.png';
+
             $user = User::create([
                 'name'          => $data['name'],
                 'email'         => $data['email'],
@@ -119,6 +123,7 @@ class EmployeeSeeder extends Seeder
                 'gender'        => $data['gender'],
                 'role'          => $data['role'],
                 'is_active'        => false,
+                'profile_picture' => $profilePic,
                 // 'password'      => Hash::make('password'),
 
             ]);

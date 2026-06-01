@@ -80,6 +80,6 @@ class PatientChronicDiseaseSeeder extends Seeder
             }
         }
 
-        $this->command->info('✅ Patient Chronic Diseases seeded successfully!');
+        // $this->command->info('✅ Patient Chronic Diseases seeded successfully!');
     }
 }

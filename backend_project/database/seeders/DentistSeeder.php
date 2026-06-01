@@ -118,6 +118,10 @@ class DentistSeeder extends Seeder
         ];
 
         foreach ($dentistsData as $data) {
+
+            $profilePic = ($data['gender'] == 1)
+            ? 'profile_pictures/male.png'
+            : 'profile_pictures/female.png';
             // 1. Create User
             $user = User::create([
                 'name'          => $data['name'],
@@ -127,6 +131,7 @@ class DentistSeeder extends Seeder
                 'role'          => UserRole::DENTIST,
                 'password'      => Hash::make('password'),
                 'is_active'        => false,
+                'profile_picture' => $profilePic,
 
             ]);
 

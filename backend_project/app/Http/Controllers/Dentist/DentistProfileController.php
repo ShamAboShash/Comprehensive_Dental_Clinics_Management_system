@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use App\Models\Dentist;
 use App\Http\Resources\DentistProfileResource;
-use App\Http\Resources\EmployeesResource;
+use App\Http\Resources\DentistsResource;
 use App\Http\Requests\AddMedicalInfoRequest;
 use App\Http\Requests\UpdateDentistProfileRequest;
 use App\Models\User;
@@ -187,16 +187,13 @@ public function editProfile(UpdateDentistProfileRequest $request)
         $dentists = User::where('role', UserRole::DENTIST->value)
             ->with([
                 'employee.dentist.specialization',
-                'employee.educations',
-                'employee.experiences',
-                'employee.trainings',
-                'employee.skills',
+
             ])
             ->get();
 
         return response()->json([
             'success' => true,
-            'data'    => EmployeesResource::collection($dentists),
+            'data'    => DentistsResource::collection($dentists),
         ]);
     }
 

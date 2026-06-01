@@ -36,9 +36,16 @@ class EmployeeController extends Controller
         return DB::transaction(function () use ($request) {
 
             $profilePicturePath = null;
+
             if ($request->hasFile('profile_picture')) {
                 $profilePicturePath = $request->file('profile_picture')
                     ->store('profile_pictures', 'public');
+            } else {
+                $gender = $request->gender; 
+
+                $defaultImage = ($gender == 1) ? 'profile_pictures/male.png' : 'profile_pictures/female.png';
+
+                $profilePicturePath = $defaultImage;
             }
             $user = User::create([
                 'name' => $request->name,
