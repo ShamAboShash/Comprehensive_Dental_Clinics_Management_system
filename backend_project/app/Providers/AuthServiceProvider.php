@@ -118,5 +118,10 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('view-patient-profile', function ($user, $patient) {
             return $user->isAdmin() || $user->isDentist();
         });
-            }
+
+        Gate::define('show-technicians', function (User $user) {
+            return $user->isAdmin() || $user->isLabManager();
+        });
+
+     }
 }

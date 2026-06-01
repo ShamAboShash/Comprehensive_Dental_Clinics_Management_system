@@ -43,6 +43,8 @@ class EmployeeResource extends JsonResource
                 'years_of_experience' => $user->employee->dentist->years_of_experience,
                 'bio'                 => $user->employee->dentist->bio,
                 'average_rating'      => $user->employee->dentist->average_rating,
+                'commission_rate'     => $user->employee->dentist->commission_rate,
+
             ] : null,
 
             // Related Data

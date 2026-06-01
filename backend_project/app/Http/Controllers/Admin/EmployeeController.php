@@ -9,7 +9,6 @@ use App\Http\Requests\UpdateEmployeeRequest;
 use App\Http\Resources\EmployeeResource;
 use App\Http\Resources\EmployeeProfileResource;
 use App\Http\Resources\PatientProfileResource;
-use App\Models\Dentist;
 use App\Models\Employee;
 use App\Models\EmployeeEducation;
 use App\Models\EmployeeExperience;
@@ -29,7 +28,7 @@ class EmployeeController extends Controller
     public function createEmployee(StoreEmployeeRequest $request)
     {
         if (!Gate::allows('manage-employees')) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' => 'غير مصرح لك بالوصول.'], 403);
         }
 
 
@@ -63,17 +62,17 @@ class EmployeeController extends Controller
 
             $this->createRelatedData($employee, $request);
 
-            if ($request->role === UserRole::DENTIST->value) {
-                Dentist::create([
-                    'employee_id' => $employee->id,
-                    'specialization_id' => $request->specialization_id,
-                    'work_hours' => $request->work_hours,
-                    'license_number' => $request->license_number,
-                    'years_of_experience' => $request->years_of_experience,
-                ]);
-            }
+            // if ($request->role === UserRole::DENTIST->value) {
+            //     Dentist::create([
+            //         'employee_id' => $employee->id,
+            //         'specialization_id' => $request->specialization_id,
+            //         'work_hours' => $request->work_hours,
+            //         'license_number' => $request->license_number,
+            //         'years_of_experience' => $request->years_of_experience,
+            //     ]);
+            // }
 
-            $user->load(['employee.dentist', 'employee.educations', 'employee.experiences', 'employee.trainings', 'employee.skills']);
+            $user->load([ 'employee.educations', 'employee.experiences', 'employee.trainings', 'employee.skills']);
 
             return response()->json([
                 'message' => 'Employee created successfully',
@@ -82,7 +81,7 @@ class EmployeeController extends Controller
         });
     }
 
-    private function createRelatedData(Employee $employee, Request $request): void
+    public function createRelatedData(Employee $employee, Request $request): void
     {
         if ($request->educations) {
             foreach ($request->educations as $edu) {
@@ -125,7 +124,7 @@ class EmployeeController extends Controller
     {
         if (!Gate::allows('manage-employees')) {
             return response()->json([
-                'message' => 'Unauthorized. Only Admin can update employees.'
+                'message' => 'غير مصرح لك بالوصول.'
             ], 403);
         }
 
@@ -136,7 +135,7 @@ class EmployeeController extends Controller
                 'date_of_birth' => $request->date_of_birth ?? $employee->date_of_birth,
                 'address'       => $request->address ?? $employee->address,
                 'gender'        => $request->gender ?? $employee->gender,
-                'role'          => $request->role ?? $employee->role,
+                'role'          => $request->role->value ?? $employee->role,
             ]);
 
             $empData = $employee->employee ?? Employee::create(['user_id' => $employee->id]);
@@ -150,22 +149,22 @@ class EmployeeController extends Controller
 
             $this->syncRelatedData($empData, $request);
 
-            if ($employee->role === UserRole::DENTIST->value) {
-                Dentist::updateOrCreate(
-                    ['employee_id' => $empData->id],
-                    [
-                        'specialization_id'   => $request->specialization_id,
-                        'license_number'      => $request->license_number,
-                        'years_of_experience' => $request->years_of_experience,
-                        'bio'                 => $request->bio ?? null,
-                    ]
-                );
-            } elseif ($employee->wasChanged('role') && $employee->role !== UserRole::DENTIST->value) {
-                Dentist::where('employee_id', $empData->id)->delete();
-            }
+            // if ($employee->role === UserRole::DENTIST->value) {
+            //     Dentist::updateOrCreate(
+            //         ['employee_id' => $empData->id],
+            //         [
+            //             'specialization_id'   => $request->specialization_id,
+            //             'license_number'      => $request->license_number,
+            //             'years_of_experience' => $request->years_of_experience,
+            //             'bio'                 => $request->bio ?? null,
+            //         ]
+            //     );
+            // } elseif ($employee->wasChanged('role') && $employee->role !== UserRole::DENTIST->value) {
+            //     Dentist::where('employee_id', $empData->id)->delete();
+            // }
 
             $employee->load([
-                'employee.dentist',
+                // 'employee.dentist',
                 'employee.educations',
                 'employee.experiences',
                 'employee.trainings',
@@ -179,7 +178,7 @@ class EmployeeController extends Controller
         });
     }
 
-    private function syncRelatedData(Employee $employee, $request): void
+    public function syncRelatedData(Employee $employee, $request)
     {
         if ($request->has('educations')) {
             $employee->educations()->delete();
@@ -247,52 +246,52 @@ class EmployeeController extends Controller
     }
 
 
- public function showEmployeeDetails($employeeId)
-{
-    $employee = Employee::with([
-        'user',
-        'educations',
-        'experiences',
-        'skills',
-        'trainings'           
-    ])->findOrFail($employeeId);
+    public function showEmployeeDetails($employeeId)
+    {
+        $employee = Employee::with([
+            'user',
+            'educations',
+            'experiences',
+            'skills',
+            'trainings'
+        ])->findOrFail($employeeId);
 
-    // Authorization using Gate
-    if (!Gate::allows('view-employee-details', $employee)) {
+        // Authorization using Gate
+        if (!Gate::allows('view-employee-details', $employee)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'غير مصرح لك بالوصول. هذا الإجراء للمدراء فقط.'
+            ], 403);
+        }
+
         return response()->json([
-            'success' => false,
-            'message' => 'غير مصرح لك بالوصول. هذا الإجراء للمدراء فقط.'
-        ], 403);
+            'success' => true,
+            'data'    => new EmployeeProfileResource($employee)
+        ], 200);
     }
 
-    return response()->json([
-        'success' => true,
-        'data'    => new EmployeeProfileResource($employee)
-    ], 200);
-}
+    public function showPatientProfile($patientId)
+    {
+        $patient = Patient::with([
+            'user',
+            'allergies',
+            'chronicDiseases.category',      // if you have category relation
+            'medications.medication'         // adjust if your relation name is different
+        ])->findOrFail($patientId);
 
-public function showPatientProfile($patientId)
-{
-    $patient = Patient::with([
-        'user',
-        'allergies',
-        'chronicDiseases.category',      // if you have category relation
-        'medications.medication'         // adjust if your relation name is different
-    ])->findOrFail($patientId);
+        // Authorization using Gate
+        if (!Gate::allows('view-patient-profile', $patient)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'غير مصرح لك بالوصول. هذا الإجراء مخصص للأطباء فقط.'
+            ], 403);
+        }
 
-    // Authorization using Gate
-    if (!Gate::allows('view-patient-profile', $patient)) {
         return response()->json([
-            'success' => false,
-            'message' => 'غير مصرح لك بالوصول. هذا الإجراء مخصص للأطباء فقط.'
-        ], 403);
+            'success' => true,
+            'data'    => new PatientProfileResource($patient)
+        ], 200);
     }
-
-    return response()->json([
-        'success' => true,
-        'data'    => new PatientProfileResource($patient)
-    ], 200);
-}
 
 
 

@@ -5,10 +5,12 @@ use App\Http\Controllers\Auth\PatientAuthController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Controllers\Admin\EmployeeController;
+use App\Http\Controllers\Admin\DentistController;
 use App\Http\Controllers\Dentist\DentistProfileController;
 use App\Http\Controllers\Employee\EmployeeProfileController;
 use App\Http\Controllers\Patient\PatientProfileController;
 use App\Http\Controllers\Generals\ShowThingsController;
+use App\Http\Controllers\LabManager\TechnicianController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -34,6 +36,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('/diseaseCategories', [ShowThingsController::class, 'diseaseCategories']);
     Route::get('/showAllEmployees', [EmployeeProfileController::class, 'showAllEmployees']);
     Route::get('/showAllPatients', [PatientProfileController::class, 'showAllPatients']);
+    Route::get('/showAllDentists', [DentistProfileController::class, 'showAllDentists']);
 
 });
 
@@ -91,6 +94,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'active'])->group(function (
     Route::post('/toggleUser/{user}', [EmployeeController::class, 'toggleUser']);
     Route::get('/showEmployeeDetails/{employeeId}', [EmployeeController::class, 'showEmployeeDetails']);
     Route::get('/showPatientProfile/{patientId}', [EmployeeController::class, 'showPatientProfile']);
+    Route::post('/createDentist', [DentistController::class, 'createDentist']);
+    Route::post('/updateDentist/{user}', [DentistController::class, 'updateDentist']);
+    Route::get('/showDentistDetails/{user}', [DentistController::class, 'showDentistDetails']);
 
 });
 
@@ -110,4 +116,7 @@ Route::prefix('dentist')->middleware(['auth:sanctum', 'active'])->group(function
 
 
 // ====================== LAB MANAGER ======================
+Route::prefix('labManager')->middleware(['auth:sanctum', 'active'])->group(function () {
 
+    Route::get('showAllTechnicians', [TechnicianController::class, 'showAllTechnicians']);
+});
