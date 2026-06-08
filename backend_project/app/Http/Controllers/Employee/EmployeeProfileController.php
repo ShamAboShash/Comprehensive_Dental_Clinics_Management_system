@@ -86,13 +86,96 @@ class EmployeeProfileController extends Controller
         'secondary_phone', 'marital_status'
     ]));
 
+    $employee = $user->employee;
+
+    // Add/Update educations (NO delete)
+    if ($request->filled('educations')) {
+        foreach ($request->input('educations') as $edu) {
+            $attributes = [
+                'employee_id' => $employee->id,
+                'degree' => $edu['degree'] ?? null,
+                'institution' => $edu['institution'] ?? null,
+                'completion_date' => $edu['completion_date'] ?? null,
+                'grade' => $edu['grade'] ?? null,
+            ];
+
+            if (!empty($edu['id'])) {
+                $employee->educations()
+                    ->where('id', $edu['id'])
+                    ->update($attributes);
+            } else {
+                $employee->educations()->create($attributes);
+            }
+        }
+    }
+
+    // Add/Update experiences (NO delete)
+    if ($request->filled('experiences')) {
+        foreach ($request->input('experiences') as $exp) {
+            $attributes = [
+                'employee_id' => $employee->id,
+                'title' => $exp['title'] ?? null,
+                'company' => $exp['company'] ?? null,
+                'start_date' => $exp['start_date'] ?? null,
+                'end_date' => $exp['end_date'] ?? null,
+            ];
+
+            if (!empty($exp['id'])) {
+                $employee->experiences()
+                    ->where('id', $exp['id'])
+                    ->update($attributes);
+            } else {
+                $employee->experiences()->create($attributes);
+            }
+        }
+    }
+
+    // Add/Update trainings (NO delete)
+    if ($request->filled('trainings')) {
+        foreach ($request->input('trainings') as $t) {
+            $attributes = [
+                'employee_id' => $employee->id,
+                'course_title' => $t['course_title'] ?? null,
+                'trainer' => $t['trainer'] ?? null,
+                'course_date' => $t['course_date'] ?? null,
+            ];
+
+            if (!empty($t['id'])) {
+                $employee->trainings()
+                    ->where('id', $t['id'])
+                    ->update($attributes);
+            } else {
+                $employee->trainings()->create($attributes);
+            }
+        }
+    }
+
+    // Add/Update skills (NO delete)
+    if ($request->filled('skills')) {
+        foreach ($request->input('skills') as $s) {
+            $attributes = [
+                'employee_id' => $employee->id,
+                'skill_name' => $s['skill_name'] ?? null,
+            ];
+
+            if (!empty($s['id'])) {
+                $employee->skills()
+                    ->where('id', $s['id'])
+                    ->update($attributes);
+            } else {
+                $employee->skills()->create($attributes);
+            }
+        }
+    }
+
     return response()->json([
         'success' => true,
         'message' => 'تم تحديث الملف الشخصي بنجاح.',
-        'data'    => new EmployeeProfileResource(
-            $user->employee->load(['user', 'educations', 'experiences', 'skills'])
+        'data' => new EmployeeProfileResource(
+            $employee->load(['user', 'educations', 'experiences', 'trainings', 'skills'])
         ),
     ]);
 }
 
 }
+

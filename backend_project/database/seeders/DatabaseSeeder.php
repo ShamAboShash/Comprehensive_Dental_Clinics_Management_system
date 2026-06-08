@@ -19,6 +19,9 @@ class DatabaseSeeder extends Seeder
         $this->call([
             DiseaseCategorySeeder::class,
             SpecializationSeeder::class,
+            AppointmentTypeSeeder::class,
+            TreatmentTypeSeeder::class,
+            ProcedureSeeder::class,
             UserSeeder::class,
             MedicationSeeder::class,
             EmployeeSeeder::class,
@@ -31,6 +34,16 @@ class DatabaseSeeder extends Seeder
             PatientChronicDiseaseSeeder::class,
             PatientMedicationSeeder::class,
             DentistSeeder::class,
+            ClinicSeeder::class,
+            TreatmentSeeder::class,
+            TreatmentSessionSeeder::class,
+            PrescriptionSeeder::class,
+            // TreatmentPhotoSeeder::class,
+            LabOrderTypeSeeder::class,
+            LabOrderSeeder::class,
+            MaterialSeeder::class,
+            WarehouseStockSeeder::class,
+            LabStockSeeder::class,
         ]);
 
         // User::factory(10)->create();

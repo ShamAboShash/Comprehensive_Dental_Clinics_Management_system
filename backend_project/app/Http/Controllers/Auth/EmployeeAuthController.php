@@ -76,7 +76,12 @@ class EmployeeAuthController extends Controller
     public function verifyCode(EmployeeVerifyCodeRequest $request)
 {
 
-
+    // if (!Gate::allows('verify-employee-code')) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'غير مصرح لك بالوصول.'
+    //         ], 403);
+    //     }
     $user = User::where('email', $request->email)->first();
 
     if (!$user) {

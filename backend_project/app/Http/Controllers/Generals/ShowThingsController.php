@@ -43,7 +43,7 @@ class ShowThingsController extends Controller
             ], 403);
         }
 
-        $specializations = Specialization::orderBy('name')->get();
+        $specializations = Specialization::orderBy('id')->get();
 
         return response()->json([
             'success' => true,
@@ -84,7 +84,7 @@ class ShowThingsController extends Controller
         ], 403);
     }
 
-    $categories = DiseaseCategory::orderBy('name')->get();
+    $categories = DiseaseCategory::orderBy('id')->get();
 
     return response()->json([
         'success' => true,

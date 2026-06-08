@@ -16,4 +16,13 @@ class Specialization extends Model
     {
        return $this->hasMany(Dentist::class);
     }
+
+
+    public function appointmentTypes()
+{
+    return $this->belongsToMany(
+        AppointmentType::class,
+        'appointment_type_specializations'
+    );
+}
 }
