@@ -18,6 +18,7 @@ class EmployeeProfileResource extends JsonResource
             'gender' => $this->user->gender == 1 ? 'ذكر' : 'أنثى',
             'role' => $this->user->role->value, // يستخدم الـ Accessor الموجود في موديل User
             'is_active' => $this->user->is_active,
+            'profile_picture' =>$this->user->profile_picture,
 
             // 2. بيانات التوظيف من موديل الـ Employee
             'secondary_phone' => $this->secondary_phone,
