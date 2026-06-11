@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class EmployeeProfileResource extends JsonResource
 {
@@ -18,9 +19,8 @@ class EmployeeProfileResource extends JsonResource
             'gender' => $this->user->gender == 1 ? 'ذكر' : 'أنثى',
             'role' => $this->user->role->value, // يستخدم الـ Accessor الموجود في موديل User
             'is_active' => $this->user->is_active,
-            'profile_picture' =>$this->user->profile_picture,
-
-            // 2. بيانات التوظيف من موديل الـ Employee
+            'date_of_birth' => $this->user->date_of_birth,
+            'profile_picture'   => $this->user?->profile_picture_url,
             'secondary_phone' => $this->secondary_phone,
             'marital_status' => $this->marital_status,
             'salary' => $this->salary,

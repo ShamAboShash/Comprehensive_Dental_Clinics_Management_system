@@ -21,7 +21,7 @@ class EmployeeResource extends JsonResource
             'phone'         => $user->phone,
             'date_of_birth' => $user->date_of_birth,
             'address'       => $user->address,
-            'profile_picture' => $user->profile_picture_url ?? null,
+            'profile_picture' => $user->profile_picture_url,
             'gender'        => $user->gender,
             'role'          => $user->role->value,
             'is_active'     => $user->is_active,

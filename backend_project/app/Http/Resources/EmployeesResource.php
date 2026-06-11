@@ -14,9 +14,7 @@ class EmployeesResource extends JsonResource
             'user_id'         =>$this->id,
             'name'            => $this->name,
             'email'           => $this->email,
-            // 'phone'           => $this->phone,
             'role'            => $this->role->value,
-            // 'is_active'       => (bool) $this->is_active,
             'profile_picture' => $this->profile_picture_url,
         ];
     }

@@ -17,6 +17,7 @@ class PatientsResource extends JsonResource
             'email'           => $this->user->email,
             'phone'           => $this->user->phone,
             'profile_picture' => $this->user->profile_picture_url,
+            'gender'          => $this->user->gender == 1 ? 'ذكر' : 'أنثى',
         ];
     }
 }
