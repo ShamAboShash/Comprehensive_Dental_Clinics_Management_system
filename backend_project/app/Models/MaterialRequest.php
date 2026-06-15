@@ -35,4 +35,14 @@ class MaterialRequest extends Model
     {
         return $this->hasMany(NewMaterialRequest::class);
     }
+
+    public function newItems()
+{
+    return $this->hasMany(NewMaterialRequest::class);
+}
+
+public function fulfillments()
+{
+    return $this->hasMany(WarehouseFulfillment::class);
+}
 }

@@ -28,6 +28,6 @@ class MaterialRequestItem extends Model
 
     public function fulfillment()
     {
-        return $this->hasOne(WarehouseFulfillment::class);
+        return $this->hasMany(WarehouseFulfillment::class);
     }
 }

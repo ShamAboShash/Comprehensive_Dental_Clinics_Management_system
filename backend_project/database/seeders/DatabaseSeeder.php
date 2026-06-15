@@ -39,6 +39,7 @@ class DatabaseSeeder extends Seeder
             TreatmentSessionSeeder::class,
             PrescriptionSeeder::class,
             // TreatmentPhotoSeeder::class,
+            LabOrderTypeCategorySeeder::class,
             LabOrderTypeSeeder::class,
             LabOrderSeeder::class,
             MaterialSeeder::class,

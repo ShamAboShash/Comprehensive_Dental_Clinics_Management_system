@@ -10,8 +10,17 @@ return new class extends Migration
     {
         Schema::create('lab_order_types', function (Blueprint $table) {
             $table->id();
+             $table->foreignId('category_id')
+                  ->nullable()
+                  ->constrained('lab_order_type_categories')
+                  ->onDelete('set null');
             $table->string('name');
             $table->string('name_en')->nullable();
+            $table->string('type')->nullable();           // النوع (تلبيسة، جسر، وجه، طقم)
+            $table->string('material')->nullable();       // المادة (Zirconia, PFM, E-max...)
+            $table->decimal('price', 10, 2)->default(0); // السعر
+            $table->integer('duration')->default(1);     // مدة التصنيع بالأيام
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class PurchaseInvoice extends Model
 {
     protected $fillable = [
-        'added_by',
+        'created_by',
         'supplier_name',
         'invoice_date',
         'total_amount',
@@ -20,9 +21,9 @@ class PurchaseInvoice extends Model
         'total_amount' => 'decimal:2',
     ];
 
-    public function addedBy()
+    public function createdBy()
     {
-        return $this->belongsTo(User::class, 'added_by');
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function items()
@@ -34,7 +35,7 @@ class PurchaseInvoice extends Model
     public function calculateTotal(): void
     {
         $total = $this->items()->sum(
-            \DB::raw('quantity * unit_price')
+            DB::raw('quantity * unit_price')
         );
         $this->update(['total_amount' => $total]);
     }

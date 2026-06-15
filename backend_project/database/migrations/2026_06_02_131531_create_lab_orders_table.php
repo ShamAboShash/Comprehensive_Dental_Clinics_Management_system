@@ -34,12 +34,11 @@ return new class extends Migration
                   ->onDelete('set null');
 
             $table->enum('status', [
+                'new',
                 'pending',
                 'in_progress',
-                'done',
-                'delivered',
-                'rejected',
-                'modification_requested'
+                'completed',
+                'cancelled'
             ])->default('pending');
 
             $table->date('delivery_date_requested')->nullable();

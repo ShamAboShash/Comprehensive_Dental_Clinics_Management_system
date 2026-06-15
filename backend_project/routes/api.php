@@ -10,7 +10,21 @@ use App\Http\Controllers\Dentist\DentistProfileController;
 use App\Http\Controllers\Employee\EmployeeProfileController;
 use App\Http\Controllers\Patient\PatientProfileController;
 use App\Http\Controllers\Generals\ShowThingsController;
+use App\Http\Controllers\LabManager\LabDashboardController;
+use App\Http\Controllers\LabManager\LabItemController;
+use App\Http\Controllers\LabManager\LabOrderController;
+use App\Http\Controllers\LabManager\LabOrderTypeCategoryController;
+use App\Http\Controllers\LabManager\LabStockController;
+use App\Http\Controllers\LabManager\MaterialRequestController;
+use App\Http\Controllers\LabManager\NotificationController;
 use App\Http\Controllers\LabManager\TechnicianController;
+use App\Http\Controllers\LabManager\WarehouseMaterialController;
+use App\Http\Controllers\WarehouseManager\MaterialController;
+use App\Http\Controllers\WarehouseManager\WarehouseStockController;
+use App\Http\Controllers\WarehouseManager\WarehouseMaterialRequestController;
+use App\Http\Controllers\WarehouseManager\PurchaseInvoiceController;
+use App\Http\Controllers\WarehouseManager\InventoryController;
+use App\Http\Controllers\WarehouseManager\ReportController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -31,12 +45,12 @@ Route::get('/roles', [ShowThingsController::class, 'roles']);
 
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
-    Route::get('/medications', [ShowThingsController::class, 'medications']);
-    Route::get('/specializations', [ShowThingsController::class, 'specializations']);
-    Route::get('/diseaseCategories', [ShowThingsController::class, 'diseaseCategories']);
-    Route::get('/showAllEmployees', [EmployeeProfileController::class, 'showAllEmployees']);
-    Route::get('/showAllPatients', [PatientProfileController::class, 'showAllPatients']);
-    Route::get('/showAllDentists', [DentistProfileController::class, 'showAllDentists']);
+    Route::get('/medications',       [ShowThingsController::class,      'medications']);
+    Route::get('/specializations',   [ShowThingsController::class,      'specializations']);
+    Route::get('/diseaseCategories', [ShowThingsController::class,      'diseaseCategories']);
+    Route::get('/showAllEmployees',  [EmployeeProfileController::class, 'showAllEmployees']);
+    Route::get('/showAllPatients',   [PatientProfileController::class,  'showAllPatients']);
+    Route::get('/showAllDentists',   [DentistProfileController::class,  'showAllDentists']);
 
 });
 
@@ -44,37 +58,35 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
 Route::prefix('employee')->group(function () {
 
-    Route::post('/login', [EmployeeAuthController::class, 'login']);
+    Route::post('/login',            [EmployeeAuthController::class, 'login']);
     Route::post('/sendVerification', [EmployeeAuthController::class, 'sendVerification']);
-    Route::post('/verifyCode', [EmployeeAuthController::class, 'verifyCode']);
-    Route::post('/setPassword', [EmployeeAuthController::class, 'setPassword']);
+    Route::post('/verifyCode',       [EmployeeAuthController::class, 'verifyCode']);
+    Route::post('/setPassword',      [EmployeeAuthController::class, 'setPassword']);
 
     Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
-        Route::post('/logout', [EmployeeAuthController::class, 'logout']);
-        Route::get('/showProfile', [EmployeeProfileController::class, 'showProfile']);
-        Route::post('/editProfile', [EmployeeProfileController::class, 'editProfile']);
-
-
+        Route::post('/logout',       [EmployeeAuthController::class,   'logout']);
+        Route::get('/showProfile',   [EmployeeProfileController::class, 'showProfile']);
+        Route::post('/editProfile',  [EmployeeProfileController::class, 'editProfile']);
 
     });
+
 });
 
 // ====================== PATIENT ======================
 
 Route::prefix('patient')->group(function () {
 
-    Route::post('/register', [PatientAuthController::class, 'register']);
-    Route::post('/login', [PatientAuthController::class, 'login']);
+    Route::post('/register',         [PatientAuthController::class, 'register']);
+    Route::post('/login',            [PatientAuthController::class, 'login']);
     Route::post('/sendVerification', [PatientAuthController::class, 'sendVerification']);
-    Route::post('/verifyEmail', [PatientAuthController::class, 'verifyEmail']);
+    Route::post('/verifyEmail',      [PatientAuthController::class, 'verifyEmail']);
 
     Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
-        Route::post('/logout', [PatientAuthController::class, 'logout']);
-        Route::get('showProfile', [PatientProfileController::class, 'showProfile']);
+        Route::post('/logout',      [PatientAuthController::class,  'logout']);
+        Route::get('/showProfile',  [PatientProfileController::class, 'showProfile']);
         Route::post('/editProfile', [PatientProfileController::class, 'editProfile']);
-
 
     });
 
@@ -88,15 +100,15 @@ Route::prefix('patient')->group(function () {
 
 Route::prefix('admin')->middleware(['auth:sanctum', 'active'])->group(function () {
 
-    Route::get('/showProfile', [AdminProfileController::class, 'showProfile']);
-    Route::post('/createEmployee', [EmployeeController::class, 'createEmployee']);
-    Route::post('/updateEmployee/{employee}', [EmployeeController::class, 'updateEmployee']);
-    Route::post('/toggleUser/{user}', [EmployeeController::class, 'toggleUser']);
-    Route::get('/showEmployeeDetails/{employeeId}', [EmployeeController::class, 'showEmployeeDetails']);
-    Route::get('/showPatientProfile/{patientId}', [EmployeeController::class, 'showPatientProfile']);
-    Route::post('/createDentist', [DentistController::class, 'createDentist']);
-    Route::post('/updateDentist/{user}', [DentistController::class, 'updateDentist']);
-    Route::get('/showDentistDetails/{user}', [DentistController::class, 'showDentistDetails']);
+    Route::get('/showProfile',                       [AdminProfileController::class, 'showProfile']);
+    Route::post('/createEmployee',                   [EmployeeController::class,     'createEmployee']);
+    Route::post('/updateEmployee/{employee}',        [EmployeeController::class,     'updateEmployee']);
+    Route::post('/toggleUser/{user}',                [EmployeeController::class,     'toggleUser']);
+    Route::get('/showEmployeeDetails/{employeeId}',  [EmployeeController::class,     'showEmployeeDetails']);
+    Route::get('/showPatientProfile/{patientId}',    [EmployeeController::class,     'showPatientProfile']);
+    Route::post('/createDentist',                    [DentistController::class,      'createDentist']);
+    Route::post('/updateDentist/{user}',             [DentistController::class,      'updateDentist']);
+    Route::get('/showDentistDetails/{user}',         [DentistController::class,      'showDentistDetails']);
 
 });
 
@@ -104,19 +116,114 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'active'])->group(function (
 
 Route::prefix('dentist')->middleware(['auth:sanctum', 'active'])->group(function () {
 
-    Route::get('/showProfile', [DentistProfileController::class, 'showProfile']);
-    Route::post('/editProfile', [DentistProfileController::class, 'editProfile']);
-    Route::post('/addMedicalInfo/{patientId}', [DentistProfileController::class, 'addMedicalInfo']);
-
+    Route::get('/showProfile',                   [DentistProfileController::class, 'showProfile']);
+    Route::post('/editProfile',                  [DentistProfileController::class, 'editProfile']);
+    Route::post('/addMedicalInfo/{patientId}',   [DentistProfileController::class, 'addMedicalInfo']);
 
 });
 
 // ====================== WAREHOUSE MANAGER ======================
 
+// Route::prefix('warehouseManager')->middleware(['auth:sanctum', 'active'])->group(function () {
 
+//     // Materials
+//     Route::apiResource('materials', MaterialController::class);
+
+//     // Stock
+//     Route::get('stock/logs',     [WarehouseStockController::class, 'logs']);
+//     Route::post('stock/{id}',    [WarehouseStockController::class, 'adjust']);
+//     Route::apiResource('stock',  WarehouseStockController::class)->only(['index', 'show']);
+
+//     // Material Requests
+//     Route::get('material-requests',                  [WarehouseMaterialRequestController::class, 'index']);
+//     Route::get('material-requests/{id}',             [WarehouseMaterialRequestController::class, 'show']);
+//     Route::patch('material-requests/{id}/fulfill',   [WarehouseMaterialRequestController::class, 'fulfill']);
+//     Route::patch('material-requests/{id}/reject',    [WarehouseMaterialRequestController::class, 'reject']);
+
+//     // Purchase Invoices
+//     Route::apiResource('purchase-invoices', PurchaseInvoiceController::class)->only(['index', 'show', 'store']);
+
+//     // Inventory
+//     Route::prefix('inventory')->group(function () {
+//         Route::get('stock-levels', [InventoryController::class, 'stockLevels']);
+//         Route::get('stock-value',  [InventoryController::class, 'stockValue']);
+//         Route::get('by-category',  [InventoryController::class, 'byCategory']);
+//     });
+
+//     // Reports
+//     Route::prefix('reports')->group(function () {
+//         Route::get('stock-movement',    [ReportController::class, 'stockMovement']);
+//         Route::get('purchase-invoices', [ReportController::class, 'purchaseInvoices']);
+//         Route::get('material-requests', [ReportController::class, 'materialRequests']);
+//     });
+
+//     // Notifications
+//     Route::get('notifications',              [NotificationController::class, 'index']);
+//     Route::patch('notifications/{id}/read',  [NotificationController::class, 'markAsRead']);
+
+// });
 
 // ====================== LAB MANAGER ======================
+
 Route::prefix('labManager')->middleware(['auth:sanctum', 'active'])->group(function () {
 
-    Route::get('showAllTechnicians', [TechnicianController::class, 'showAllTechnicians']);
+    // Dashboard
+    // Route::get('/dashboard', [LabDashboardController::class, 'index']);
+    Route::get('countOrders', [LabDashboardController::class, 'orderCounts']);
+    Route::get('countTechnicians', [LabDashboardController::class, 'technicianCounts']);
+    Route::get('countStock', [LabDashboardController::class, 'stockCounts']);
+
+    // Item Categories
+    Route::get('showAllItemsCategories',              [LabOrderTypeCategoryController::class, 'index']);
+    Route::get('showItemCategory/{id}',         [LabOrderTypeCategoryController::class, 'show']);
+    Route::post('addItemCategory',             [LabOrderTypeCategoryController::class, 'store']);
+    Route::post('updateItemCategory/{id}',       [LabOrderTypeCategoryController::class, 'update']);
+    Route::post('deleteItemCategory/{id}',      [LabOrderTypeCategoryController::class, 'destroy']);
+
+    // Lab Items
+    Route::get('showAllLabItems',              [LabItemController::class, 'index']);
+    Route::get('showLabItem/{id}',         [LabItemController::class, 'show']);
+    Route::post('addLabItem',             [LabItemController::class, 'store']);
+    Route::post('updateLabItem/{id}',       [LabItemController::class, 'update']);
+    Route::post('deleteLabItem/{id}',      [LabItemController::class, 'destroy']);
+    Route::post('updateLabItemStatus/{id}', [LabItemController::class, 'toggle']);
+
+    // Lab Orders
+    Route::get('showAllLabOrders',                 [LabOrderController::class, 'index']);
+    Route::get('showAllTodayLabOrders',            [LabOrderController::class, 'today']);
+    Route::get('showLabOrder/{id}',                   [LabOrderController::class, 'show']);
+    // Route::post('setStatusPending/{id}',     [LabOrderController::class, 'setPending']);
+    Route::post('setStatusInProgress/{id}', [LabOrderController::class, 'setInProgress']);
+    Route::post('setStatusCompleted/{id}',   [LabOrderController::class, 'setCompleted']);
+    Route::post('setStatusCancelled/{id}',   [LabOrderController::class, 'setCancelled']);
+
+    // Technicians
+    Route::get('showAllTechnicians',                      [TechnicianController::class, 'index']);
+    Route::get('showTechniciansPerformance',          [TechnicianController::class, 'performance']);
+    Route::get('showTechnician/{id}',                 [TechnicianController::class, 'show']);
+    Route::post('updateTechnicianWorkSchedule/{id}',        [TechnicianController::class, 'updateWorkTime']);
+
+    // Lab Stock
+    Route::get('showLabStock',                  [LabStockController::class, 'index']);
+    Route::get('showLabStockLogs',             [LabStockController::class, 'logs']);
+    Route::get('showStock/{id}',             [LabStockController::class, 'show']);
+    Route::post('addToStock/{id}',        [LabStockController::class, 'add']);
+    Route::post('subtractFromStock/{id}',   [LabStockController::class, 'subtract']);
+    Route::post('notifyLowStock',    [LabStockController::class, 'notifyShort']);
+
+    // Warehouse Materials (read-only)
+    Route::get('showAllWarehouseMaterials',      [WarehouseMaterialController::class, 'index']);
+    Route::get('showWarehouseMaterial/{id}', [WarehouseMaterialController::class, 'show']);
+
+    // Material Requests
+    Route::get('showAllMaterialRequests',          [MaterialRequestController::class, 'index']);
+    Route::get('showMaterialRequest/{id}',     [MaterialRequestController::class, 'show']);
+    Route::post('addMaterialRequest',         [MaterialRequestController::class, 'store']);
+    Route::post('deleteMaterialRequest/{id}',  [MaterialRequestController::class, 'destroy']);
+
+    // Notifications
+    Route::get('notifications',              [NotificationController::class, 'index']);
+    Route::patch('notifications/{id}/read',  [NotificationController::class, 'markAsRead']);
+
 });
+

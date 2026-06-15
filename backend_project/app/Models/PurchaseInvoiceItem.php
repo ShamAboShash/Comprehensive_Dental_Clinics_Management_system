@@ -11,6 +11,8 @@ class PurchaseInvoiceItem extends Model
         'material_id',
         'quantity',
         'unit_price',
+        'total_price',
+
     ];
 
     protected $casts = [

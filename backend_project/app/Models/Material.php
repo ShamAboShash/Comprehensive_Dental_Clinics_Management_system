@@ -25,4 +25,10 @@ class Material extends Model
     {
         return $this->hasMany(LabStock::class);
     }
+
+
+public function materialRequestItems()
+{
+    return $this->hasMany(MaterialRequestItem::class);
+}
 }

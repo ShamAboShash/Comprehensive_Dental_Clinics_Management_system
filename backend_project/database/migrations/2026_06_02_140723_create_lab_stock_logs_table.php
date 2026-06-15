@@ -19,15 +19,9 @@ return new class extends Migration
                   ->constrained('lab_stocks')
                   ->onDelete('set null');
 
-            $table->enum('type', ['in', 'out']);
+            $table->enum('type', ['add', 'subtract']);
             $table->integer('quantity');
-            $table->enum('reason', [
-                'warehouse_delivery',
-                'used_in_order',
-                'adjustment',
-                'expired',
-                'return'
-            ]);
+            $table->string('reason');
             $table->text('notes')->nullable();
             $table->foreignId('done_by')
                   ->constrained('users')

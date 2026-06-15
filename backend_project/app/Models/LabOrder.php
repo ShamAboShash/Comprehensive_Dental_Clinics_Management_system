@@ -29,9 +29,9 @@ class LabOrder extends Model
         return $this->belongsTo(Treatment::class);
     }
 
-    public function session()
+    public function treatmentsession()
     {
-        return $this->belongsTo(Session::class);
+        return $this->belongsTo(TreatmentSession::class);
     }
 
     public function dentist()
@@ -57,6 +57,11 @@ class LabOrder extends Model
     public function modifications()
     {
         return $this->hasMany(LabOrderModification::class);
+    }
+
+    public function materials()
+    {
+        return $this->hasMany(LabOrderMaterial::class);
     }
 
     // ====================== Helper Methods ======================
