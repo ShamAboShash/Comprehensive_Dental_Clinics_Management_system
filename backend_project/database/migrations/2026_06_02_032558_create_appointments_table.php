@@ -29,9 +29,9 @@ return new class extends Migration
                 ->constrained('treatments')
                 ->onDelete('set null');
 
-            $table->foreignId('created_by')
-                ->constrained('users')
-                ->onDelete('cascade');
+            // $table->foreignId('created_by')
+            //     ->constrained('users')
+            //     ->onDelete('cascade');
 
             $table->enum('type', [
                 'emergency',
@@ -47,6 +47,7 @@ return new class extends Migration
                 'rejected',
                 'cancelled',
                 'completed',
+                'patient_no_show',
             ])->default('pending');
 
             $table->dateTime('appointment_time')->nullable();

@@ -13,6 +13,12 @@ return new class extends Migration
             $table->string('name');
             $table->string('name_en')->nullable();
             $table->decimal('price', 10, 2);
+
+            $table->foreignId('treatment_session_id')
+                ->nullable()
+                ->constrained('treatment_sessions')
+                ->onDelete('set null');
+
             $table->timestamps();
         });
     }

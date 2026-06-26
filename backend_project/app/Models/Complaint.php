@@ -13,6 +13,8 @@ class Complaint extends Model
         'description',
         'status',
         'admin_response',
+        'priority',
+        'phone_number',
     ];
 
     public function patient()

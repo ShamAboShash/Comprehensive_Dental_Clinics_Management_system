@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('company_name')->nullable();
             $table->string('unit')->nullable();
             $table->integer('quantity');
-            $table->text('reason')->nullable();
+            $table->string('dosage')->nullable();
 
             $table->enum('status', [
                 'pending',

@@ -12,6 +12,8 @@ class MaterialRequest extends Model
         'clinic_id',
         'status',
         'notes',
+        'warehouse_notes',
+
     ];
 
     // ====================== Relationships ======================

@@ -175,6 +175,10 @@ class DentistController extends EmployeeController
         return response()->json([
             'success' => true,
             'data'    => new EmployeeResource($user),
+            /// add the dentist treatments count for the week
+            // most treated treatments type for the week
+            // the rank of the dentist for the week
+            // 
         ]);
     }
     // private function createRelatedData(Employee $employee, Request $request): void

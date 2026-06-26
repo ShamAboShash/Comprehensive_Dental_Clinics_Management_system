@@ -14,6 +14,8 @@ class NewMaterialRequest extends Model
         'quantity',
         'reason',
         'status',
+        'dosage',
+
     ];
 
     // ====================== Relationships ======================

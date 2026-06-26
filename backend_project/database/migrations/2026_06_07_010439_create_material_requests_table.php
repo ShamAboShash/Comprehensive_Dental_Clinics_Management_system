@@ -32,6 +32,8 @@ return new class extends Migration
             ])->default('pending');
 
             $table->text('notes')->nullable();
+            $table->text('warehouse_notes')->nullable();
+
             $table->timestamps();
         });
     }

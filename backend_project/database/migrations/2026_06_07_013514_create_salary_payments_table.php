@@ -22,9 +22,9 @@ return new class extends Migration
         ->constrained('users')
         ->onDelete('cascade');
 
-    $table->decimal('amount', 10, 2);
+    // $table->decimal('amount', 10, 2);
     $table->date('payment_date');
-    $table->string('period')->nullable(); // e.g. "June 2026"
+    // $table->string('period')->nullable(); // e.g. "June 2026"
     $table->text('notes')->nullable();
 
     $table->timestamps();

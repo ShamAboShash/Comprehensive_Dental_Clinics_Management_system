@@ -13,6 +13,7 @@ class LabOrder extends Model
         'patient_id',
         'technician_id',
         'status',
+        'price',
         'delivery_date_requested',
         'rejection_reason',
         'notes',

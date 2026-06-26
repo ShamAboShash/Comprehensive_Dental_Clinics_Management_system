@@ -6,47 +6,40 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('attendance', function (Blueprint $table) {
-    $table->id();
+            $table->id();
 
-    $table->foreignId('employee_id')
-        ->constrained('employees')
-        ->onDelete('cascade');
+            $table->foreignId('employee_id')
+                ->constrained('employees')
+                ->onDelete('cascade');
 
-    $table->foreignId('registered_by')
-        ->constrained('users')
-        ->onDelete('cascade');
+            $table->foreignId('registered_by')
+                ->constrained('users')
+                ->onDelete('cascade');
 
-    $table->date('date');
-    $table->time('check_in')->nullable();
-    $table->time('check_out')->nullable();
-    // add start time of the job and the end time
+            $table->date('date');
+            $table->time('check_in')->nullable();
+            $table->time('check_out')->nullable();
+            // $table->time('shift_start')->nullable();
+            // $table->time('shift_end')->nullable();
 
-    $table->enum('status', [
-        'present',
-        'absent',
-        'late',
-        'excused',
-    ])->default('present');
+            $table->enum('status', [
+                'present',
+                'absent',
+            ])->default('present');
 
-    $table->text('notes')->nullable();
+            $table->text('notes')->nullable();
 
-    $table->timestamps();
+            $table->timestamps();
 
-    $table->unique(['employee_id', 'date']);
-});
+            $table->unique(['employee_id', 'date']);
+        });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('attendances');
+        Schema::dropIfExists('attendance');
     }
 };
