@@ -129,7 +129,7 @@ class DentistSeeder extends Seeder
                 'phone'         => $data['phone'],
                 'gender'        => $data['gender'],
                 'role'          => UserRole::DENTIST,
-                'password'      => Hash::make('password'),
+                // 'password'      => Hash::make('password'),
                 'is_active'        => false,
                 'profile_picture' => $profilePic,
 

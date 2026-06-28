@@ -7,6 +7,15 @@ use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\DentistController;
 use App\Http\Controllers\Dentist\DentistProfileController;
+use App\Http\Controllers\Dentist\AppointmentController;
+use App\Http\Controllers\Dentist\WorkScheduleController;
+use App\Http\Controllers\Dentist\PatientController;
+use App\Http\Controllers\Dentist\TreatmentController;
+use App\Http\Controllers\Dentist\SessionController;
+use App\Http\Controllers\Dentist\ToothTreatmentController;
+use App\Http\Controllers\Dentist\PrescriptionController;
+use App\Http\Controllers\Dentist\TreatmentPhotoController;
+use App\Http\Controllers\Dentist\LookupController;
 use App\Http\Controllers\Employee\EmployeeProfileController;
 use App\Http\Controllers\Patient\PatientProfileController;
 use App\Http\Controllers\Generals\ShowThingsController;
@@ -116,12 +125,83 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'active'])->group(function (
 
 Route::prefix('dentist')->middleware(['auth:sanctum', 'active'])->group(function () {
 
-    Route::get('/showProfile',                   [DentistProfileController::class, 'showProfile']);
-    Route::post('/editProfile',                  [DentistProfileController::class, 'editProfile']);
-    Route::post('/addMedicalInfo/{patientId}',   [DentistProfileController::class, 'addMedicalInfo']);
+    // Profile
+    Route::get('/showProfile',  [DentistProfileController::class, 'showProfile']);
+    Route::post('/editProfile', [DentistProfileController::class, 'editProfile']);
+
+    // Appointments
+    Route::get('/dailyAppointments',                          [AppointmentController::class, 'daily']);
+    Route::get('/yesterdayAppointments',                      [AppointmentController::class, 'yesterday']);
+    Route::get('/weeklyAppointments',                         [AppointmentController::class, 'weekly']);
+    Route::get('/monthlyAppointments',                        [AppointmentController::class, 'monthly']);
+    Route::get('/showAppointment/{appointment}',              [AppointmentController::class, 'show']);
+    Route::post('/updateAppointmentStatus/{appointment}',     [AppointmentController::class, 'updateStatus']);
+
+    // Work Schedule
+    Route::get('/showWeekSchedule',                           [WorkScheduleController::class, 'index']);
+
+    // Patients
+    Route::get('/showSAllPatients',                           [PatientController::class, 'index']);
+    Route::get('/showPatientDetails/{patient}',               [PatientController::class, 'show']);
+    Route::post('/addPatientMedicalInfo/{patient}',           [PatientController::class, 'addMedicalInfo']);
+
+    // Treatments
+    Route::get('/showAllPatientTreatments/{patient}',               [TreatmentController::class, 'index']);
+    Route::post('/addPatientTreatment/{patient}',              [TreatmentController::class, 'store']);
+    Route::get('/showTreatmentDetails/{treatment}',                      [TreatmentController::class, 'show']);
+    Route::post('/updateTreatmentDetails/{treatment}',                      [TreatmentController::class, 'update']);
+
+    // Sessions — API #7, #11, #12
+    Route::get('/showAllTreatmentSessions/{treatment}/{session}',   [SessionController::class, 'show']);
+    Route::post('/addTreatmentSession/{treatment}',            [SessionController::class, 'store']);
+    Route::post('/updateTreatmentSession/{treatment}/{session}',   [SessionController::class, 'update']);
+
+    // Tooth Treatments — API #13, #14
+    Route::post(
+        '/treatments/{treatment}/sessions/{session}/tooth-treatments',
+        [ToothTreatmentController::class, 'store']
+    );
+    Route::post(
+        '/treatments/{treatment}/sessions/{session}/tooth-treatments/{toothTreatment}',
+        [ToothTreatmentController::class, 'destroy']
+    );
+
+    // Prescriptions — API #15, #16
+    Route::post(
+        '/treatments/{treatment}/sessions/{session}/prescription',
+        [PrescriptionController::class, 'store']
+    );
+    Route::post(
+        '/treatments/{treatment}/sessions/{session}/prescription',
+        [PrescriptionController::class, 'update']
+    );
+
+    // Treatment Photos — API #17, #18
+    Route::post(
+        '/treatments/{treatment}/sessions/{session}/photos',
+        [TreatmentPhotoController::class, 'store']
+    );
+    Route::post(
+        '/treatments/{treatment}/sessions/{session}/photos/{photo}',
+        [TreatmentPhotoController::class, 'destroy']
+    );
+
+    // Lab Orders — API #19, #20, #21, #22, #23, #27
+    Route::get('/lab-orders',                                  [LabOrderController::class, 'index']);
+    Route::post('/lab-orders',                                 [LabOrderController::class, 'store']);
+    Route::get('/lab-orders/{labOrder}',                       [LabOrderController::class, 'show']);
+    Route::post('/lab-orders/{labOrder}',                       [LabOrderController::class, 'update']);
+    Route::post('/lab-orders/{labOrder}/cancel',              [LabOrderController::class, 'cancel']);
+    Route::post(
+        '/lab-orders/{labOrder}/modifications/{modification}/respond',
+        [LabOrderController::class, 'respondToModification']
+    );
+
+    // Lookups — API #24, #25
+    Route::get('/lookups/procedures',                          [LookupController::class, 'procedures']);
+    Route::get('/lookups/lab-order-types',                     [LookupController::class, 'labOrderTypes']);
 
 });
-
 // ====================== WAREHOUSE MANAGER ======================
 
 // Route::prefix('warehouseManager')->middleware(['auth:sanctum', 'active'])->group(function () {

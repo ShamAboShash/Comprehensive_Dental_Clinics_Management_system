@@ -49,7 +49,6 @@ class TreatmentSessionSeeder extends Seeder
                     'dentist_id' => $dentistId,
                     'appointment_type_id' => $appointmentTypeId,
                     'treatment_id' => $treatment->id,
-                    'created_by' => $createdByUserId,
                     'type' => 'continue_treatment',
 
                     'status' => 'completed',

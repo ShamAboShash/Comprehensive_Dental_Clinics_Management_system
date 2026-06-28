@@ -35,7 +35,7 @@ class Treatment extends Model
 
     public function sessions()
     {
-        return $this->hasMany(Session::class);
+        return $this->hasMany(TreatmentSession::class);
     }
 
     public function appointments()

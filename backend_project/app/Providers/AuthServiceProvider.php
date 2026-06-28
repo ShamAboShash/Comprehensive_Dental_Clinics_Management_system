@@ -127,6 +127,10 @@ class AuthServiceProvider extends ServiceProvider
             return $user->isLabManager();
         });
 
+        Gate::define('is-dentist', function ($user) {
+            return $user->isDentist();
+        });
+
         Gate::define('is-warehouse-manager', function ($user) {
             return $user->isWarehouseManager();
         });

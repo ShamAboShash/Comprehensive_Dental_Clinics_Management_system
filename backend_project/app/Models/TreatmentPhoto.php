@@ -22,7 +22,7 @@ class TreatmentPhoto extends Model
 
     public function session()
     {
-        return $this->belongsTo(Session::class);
+        return $this->belongsTo(TreatmentSession::class);
     }
 
     // ====================== Accessors ======================
