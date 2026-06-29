@@ -8,7 +8,7 @@ use App\Http\Requests\Dentist\UpdateSessionRequest;
 use App\Http\Resources\Dentist\SessionDetailResource;
 use App\Http\Resources\Dentist\SessionResource;
 use App\Models\Appointment;
-use App\Models\Session;
+use App\Models\TreatmentSession;
 use App\Models\Treatment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,10 +25,48 @@ class SessionController extends Controller
     // GET /dentist/treatments/{treatment}/sessions/{session}
     // API #7 — Session detail with tooth treatments, photos, prescription
     // ---------------------------------------------------------------
+
+    // ---------------------------------------------------------------
+    // GET /dentist/treatments/{treatment}/sessions
+    // Show all sessions for a treatment
+    // ---------------------------------------------------------------
+    public function index(
+        Request $request,
+        Treatment $treatment
+    ): JsonResponse {
+        Gate::authorize('is-dentist');
+
+        $dentistId = $this->getDentistId($request);
+
+        // Access check — dentist must have appointment with patient
+        $hasAccess = Appointment::where('dentist_id', $dentistId)
+            ->where('patient_id', $treatment->patient_id)
+            ->whereNotIn('status', ['cancelled', 'rejected'])
+            ->exists();
+
+        if (!$hasAccess) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ليس لديك صلاحية الوصول إلى جلسات هذا العلاج.',
+            ], 403);
+        }
+
+        $sessions = TreatmentSession::with(['dentist.employee.user'])
+            ->where('treatment_id', $treatment->id)
+            ->orderBy('session_number')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'count'   => $sessions->count(),
+            'data'    => SessionResource::collection($sessions),
+        ]);
+    }
+
     public function show(
         Request $request,
         Treatment $treatment,
-        Session $session
+        TreatmentSession $session
     ): JsonResponse {
         Gate::authorize('is-dentist');
 
@@ -108,9 +146,9 @@ class SessionController extends Controller
         }
 
         // Auto-increment session number
-        $nextNumber = Session::where('treatment_id', $treatment->id)->max('session_number') + 1;
+        $nextNumber = TreatmentSession::where('treatment_id', $treatment->id)->max('session_number') + 1;
 
-        $session = Session::create([
+        $session = TreatmentSession::create([
             'treatment_id'      => $treatment->id,
             'appointment_id'    => $request->appointment_id,
             'dentist_id'        => $dentistId,
@@ -147,7 +185,7 @@ class SessionController extends Controller
     public function update(
         UpdateSessionRequest $request,
         Treatment $treatment,
-        Session $session
+        TreatmentSession $session
     ): JsonResponse {
         Gate::authorize('is-dentist');
 

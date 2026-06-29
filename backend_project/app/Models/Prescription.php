@@ -15,7 +15,7 @@ class Prescription extends Model
 
     public function session()
     {
-        return $this->belongsTo(Session::class);
+        return $this->belongsTo(TreatmentSession::class);
     }
 
     public function dentist()
@@ -30,6 +30,8 @@ class Prescription extends Model
 
     public function medications()
     {
-        return $this->hasMany(PrescriptionMedication::class);
+        return $this->belongsToMany(Medication::class, 'prescription_medications')
+            ->withPivot('dosage', 'frequency', 'duration', 'notes')
+            ->withTimestamps();
     }
 }

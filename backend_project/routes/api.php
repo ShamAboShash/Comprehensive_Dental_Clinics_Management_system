@@ -151,8 +151,9 @@ Route::prefix('dentist')->middleware(['auth:sanctum', 'active'])->group(function
     Route::get('/showTreatmentDetails/{treatment}',                      [TreatmentController::class, 'show']);
     Route::post('/updateTreatmentDetails/{treatment}',                      [TreatmentController::class, 'update']);
 
-    // Sessions — API #7, #11, #12
-    Route::get('/showAllTreatmentSessions/{treatment}/{session}',   [SessionController::class, 'show']);
+    // Sessions
+    Route::get('/showAllTreatmentSesions/{treatment}',             [SessionController::class, 'index']);
+    Route::get('/showTreatmentSession/{treatment}/{session}',   [SessionController::class, 'show']);
     Route::post('/addTreatmentSession/{treatment}',            [SessionController::class, 'store']);
     Route::post('/updateTreatmentSession/{treatment}/{session}',   [SessionController::class, 'update']);
 
@@ -168,32 +169,35 @@ Route::prefix('dentist')->middleware(['auth:sanctum', 'active'])->group(function
 
     // Prescriptions — API #15, #16
     Route::post(
-        '/treatments/{treatment}/sessions/{session}/prescription',
+        '/addPrescription/{treatment}/{session}',
         [PrescriptionController::class, 'store']
     );
     Route::post(
-        '/treatments/{treatment}/sessions/{session}/prescription',
+        '/updatePrescription/{treatment}/{session}',
         [PrescriptionController::class, 'update']
     );
 
     // Treatment Photos — API #17, #18
     Route::post(
-        '/treatments/{treatment}/sessions/{session}/photos',
+        '/addTreatmentPhoto/{treatment}/{session}',
         [TreatmentPhotoController::class, 'store']
     );
     Route::post(
-        '/treatments/{treatment}/sessions/{session}/photos/{photo}',
+        '/updateTreatmentPhoto/{treatment}/{session}/{photo}',
+        [TreatmentPhotoController::class, 'update']
+    );
+    Route::post(
+        '/deleteTreatmentPhoto/{treatment}/{session}/{photo}',
         [TreatmentPhotoController::class, 'destroy']
     );
 
     // Lab Orders — API #19, #20, #21, #22, #23, #27
-    Route::get('/lab-orders',                                  [LabOrderController::class, 'index']);
-    Route::post('/lab-orders',                                 [LabOrderController::class, 'store']);
-    Route::get('/lab-orders/{labOrder}',                       [LabOrderController::class, 'show']);
-    Route::post('/lab-orders/{labOrder}',                       [LabOrderController::class, 'update']);
-    Route::post('/lab-orders/{labOrder}/cancel',              [LabOrderController::class, 'cancel']);
-    Route::post(
-        '/lab-orders/{labOrder}/modifications/{modification}/respond',
+    Route::get('/showAllLabOrders',                                  [LabOrderController::class, 'index']);
+    Route::post('/addLabOrder',                                 [LabOrderController::class, 'store']);
+    Route::get('/showLabOrderDetails/{labOrder}',                       [LabOrderController::class, 'show']);
+    Route::post('/updateLabOrder/{labOrder}',                       [LabOrderController::class, 'update']);
+    Route::post('/cancelLabOrder/{labOrder}',              [LabOrderController::class, 'cancel']);
+    Route::post('/responseToLabOrderModification/{labOrder}/{modification}',
         [LabOrderController::class, 'respondToModification']
     );
 

@@ -39,24 +39,29 @@ class TreatmentSession extends Model
         return $this->belongsTo(Dentist::class);
     }
 
-    public function toothTreatments()
+   public function toothTreatments()
     {
-        return $this->hasMany(ToothTreatment::class);
+        return $this->hasMany(ToothTreatment::class, 'session_id');
     }
 
     public function prescriptions()
     {
-        return $this->hasMany(Prescription::class);
+        return $this->hasMany(Prescription::class, 'session_id');
+    }
+
+    public function prescription()
+    {
+        return $this->hasOne(Prescription::class, 'session_id');
     }
 
     public function photos()
     {
-        return $this->hasMany(TreatmentPhoto::class);
+        return $this->hasMany(TreatmentPhoto::class, 'session_id');
     }
 
     public function labOrders()
     {
-        return $this->hasMany(LabOrder::class);
+        return $this->hasMany(LabOrder::class, 'session_id');
     }
 
     // ====================== Helper Methods ======================
