@@ -12,8 +12,8 @@ class TreatmentSeeder extends Seeder
 {
     public function run(): void
     {
-        $patients = Patient::all();
-        $dentists = Dentist::all();
+        $patients       = Patient::all();
+        $dentists       = Dentist::all();
         $treatmentTypes = TreatmentType::all();
 
         if ($patients->isEmpty() || $dentists->isEmpty() || $treatmentTypes->isEmpty()) {
@@ -21,20 +21,19 @@ class TreatmentSeeder extends Seeder
             return;
         }
 
-        foreach ($patients->take(8) as $patient) {  // Seed for first 8 patients
+        foreach ($patients->take(8) as $patient) {
             $dentist = $dentists->random();
-            $type = $treatmentTypes->random();
+            $type    = $treatmentTypes->random();
 
             Treatment::create([
-                'patient_id'           => $patient->id,
-                'dentist_id'           => $dentist->id,
-                'treatment_type_id'    => $type->id,
-                'total_sessions_needed'=> rand(2, 6),
-                'sessions_completed'   => 0,
-                'status'               => 'ongoing',
-                'notes'                => 'تم بدء العلاج بتاريخ ' . now()->format('Y-m-d'),
+                'patient_id'             => $patient->id,
+                'dentist_id'             => $dentist->id,
+                'treatment_type_id'      => $type->id,
+                'total_sessions_needed'  => rand(2, 6),
+                'sessions_completed'     => 0, // session seeder will increment this correctly
+                'status'                 => 'ongoing',
+                'notes'                  => 'تم بدء العلاج بتاريخ ' . now()->format('Y-m-d'),
             ]);
         }
-
     }
 }

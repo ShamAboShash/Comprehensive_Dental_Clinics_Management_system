@@ -12,6 +12,7 @@ class UpdatePrescriptionRequest extends FormRequest
     {
         return [
             'notes'                          => 'nullable|string|max:2000',
+        'force' => 'sometimes|boolean',  
 
             'medications'                    => 'sometimes|array|min:1',
             'medications.*.medication_id'    => 'required|exists:medications,id',

@@ -28,6 +28,37 @@ class TreatmentResource extends JsonResource
             'sessions_completed'    => $this->sessions_completed,
             'notes'                 => $this->notes,
             'created_at'            => $this->created_at->toDateString(),
+
+            'teeth_map' => $this->whenLoaded('sessions', function () {
+    $map = [];
+
+    foreach ($this->sessions as $session) {
+        foreach ($session->toothTreatments as $tt) {
+            $tooth = (string) $tt->tooth_number;
+
+            // Force it to stay as object key
+            if (!array_key_exists($tooth, $map)) {
+                $map[$tooth] = [];
+            }
+
+            $map[$tooth][] = [
+                'tooth_treatment_id' => $tt->id,
+                'procedure'          => $tt->procedure?->name,
+                'procedure_en'       => $tt->procedure?->name_en,
+                'price'              => $tt->procedure?->price,
+                'session_id'         => $session->id,
+                'session_number'     => $session->session_number,
+                'notes'              => $tt->notes,
+            ];
+        }
+    }
+
+    // Sort treatments inside each tooth
+    foreach ($map as $tooth => $treatments) {
+        usort($map[$tooth], fn($a, $b) => $a['session_number'] <=> $b['session_number']);
+    }
+
+return (object) $map;}),
         ];
     }
 }

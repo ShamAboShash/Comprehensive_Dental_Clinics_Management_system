@@ -30,39 +30,6 @@ class SessionController extends Controller
     // GET /dentist/treatments/{treatment}/sessions
     // Show all sessions for a treatment
     // ---------------------------------------------------------------
-    public function index(
-        Request $request,
-        Treatment $treatment
-    ): JsonResponse {
-        Gate::authorize('is-dentist');
-
-        $dentistId = $this->getDentistId($request);
-
-        // Access check — dentist must have appointment with patient
-        $hasAccess = Appointment::where('dentist_id', $dentistId)
-            ->where('patient_id', $treatment->patient_id)
-            ->whereNotIn('status', ['cancelled', 'rejected'])
-            ->exists();
-
-        if (!$hasAccess) {
-            return response()->json([
-                'success' => false,
-                'message' => 'ليس لديك صلاحية الوصول إلى جلسات هذا العلاج.',
-            ], 403);
-        }
-
-        $sessions = TreatmentSession::with(['dentist.employee.user'])
-            ->where('treatment_id', $treatment->id)
-            ->orderBy('session_number')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'count'   => $sessions->count(),
-            'data'    => SessionResource::collection($sessions),
-        ]);
-    }
-
     public function show(
         Request $request,
         Treatment $treatment,
@@ -133,7 +100,6 @@ class SessionController extends Controller
             ], 422);
         }
 
-        // Verify appointment belongs to this dentist and patient
         $appointment = Appointment::find($request->appointment_id);
         if (
             $appointment->dentist_id !== $dentistId ||
@@ -145,8 +111,8 @@ class SessionController extends Controller
             ], 422);
         }
 
-        // Auto-increment session number
-        $nextNumber = TreatmentSession::where('treatment_id', $treatment->id)->max('session_number') + 1;
+        $nextNumber = TreatmentSession::where('treatment_id', $treatment->id)
+            ->max('session_number') + 1;
 
         $session = TreatmentSession::create([
             'treatment_id'      => $treatment->id,
@@ -159,22 +125,31 @@ class SessionController extends Controller
             'notes'             => $request->notes,
         ]);
 
-        // Increment sessions_completed on the treatment
+        // Create tooth treatments if provided
+        if ($request->has('tooth_treatments')) {
+            foreach ($request->tooth_treatments as $item) {
+                $session->toothTreatments()->create([
+                    'procedure_id' => $item['procedure_id'],
+                    'tooth_number' => $item['tooth_number'],
+                    'notes'        => $item['notes'] ?? null,
+                ]);
+            }
+        }
+
         if ($session->status === 'completed') {
             $treatment->increment('sessions_completed');
-
-            // Auto-complete treatment if all sessions done
+            $treatment->refresh();
             if ($treatment->sessions_completed >= $treatment->total_sessions_needed) {
                 $treatment->update(['status' => 'completed']);
             }
         }
 
-        $session->load(['dentist.employee.user']);
+        $session->load(['dentist.employee.user', 'toothTreatments.procedure']);
 
         return response()->json([
             'success' => true,
             'message' => 'تم إضافة الجلسة بنجاح.',
-            'data'    => new SessionResource($session),
+            'data'    => new SessionDetailResource($session),
         ], 201);
     }
 

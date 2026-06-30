@@ -135,5 +135,9 @@ class AuthServiceProvider extends ServiceProvider
             return $user->isWarehouseManager();
         });
 
+        Gate::define('is-secretary', function ($user) {
+            return $user->isSecretary();
+        });
+
      }
 }

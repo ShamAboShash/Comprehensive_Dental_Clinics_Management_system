@@ -22,6 +22,9 @@ return new class extends Migration
                   ->constrained('patients')
                   ->onDelete('cascade');
 
+            $table->boolean('interaction_override')->default(false);
+
+
             $table->text('notes')->nullable();
             $table->timestamps();
         });

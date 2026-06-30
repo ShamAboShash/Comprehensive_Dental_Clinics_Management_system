@@ -14,9 +14,9 @@ class UpdateDentistProfileRequest extends FormRequest
             // User fields
             'name'          => ['sometimes', 'string', 'max:255'],
             'phone'         => ['sometimes', 'string', 'unique:users,phone,' . $this->user()->id],
-            'date_of_birth' => ['sometimes', 'date'],
+            // 'date_of_birth' => ['sometimes', 'date'],
             'address'       => ['sometimes', 'string'],
-            'gender'        => ['sometimes', 'integer', 'in:1,2'],
+            // 'gender'        => ['sometimes', 'integer', 'in:1,2'],
             'profile_picture' => ['sometimes', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
 
             // Employee fields
@@ -24,8 +24,8 @@ class UpdateDentistProfileRequest extends FormRequest
             'marital_status'  => ['sometimes', 'string'],
 
             // Dentist fields
-            'license_number'      => ['sometimes', 'string', 'unique:dentists,license_number,' . $this->user()->employee?->dentist?->id],
-            'years_of_experience' => ['sometimes', 'integer', 'min:0'],
+            // 'license_number'      => ['sometimes', 'string', 'unique:dentists,license_number,' . $this->user()->employee?->dentist?->id],
+            // 'years_of_experience' => ['sometimes', 'integer', 'min:0'],
             'bio'                 => ['sometimes', 'string'],
             // 'specialization_id'   => ['sometimes', 'exists:specializations,id'],
         ];

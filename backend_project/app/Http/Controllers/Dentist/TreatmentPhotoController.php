@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Dentist;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Dentist\StoreTreatmentPhotoRequest;
 use App\Http\Resources\Dentist\TreatmentPhotoResource;
-use App\Models\Session;
+use App\Models\TreatmentSession;
 use App\Models\Treatment;
 use App\Models\TreatmentPhoto;
 use Illuminate\Http\JsonResponse;
@@ -27,7 +27,7 @@ class TreatmentPhotoController extends Controller
     public function store(
         StoreTreatmentPhotoRequest $request,
         Treatment $treatment,
-        Session $session
+        TreatmentSession $session
     ): JsonResponse {
         Gate::authorize('is-dentist');
 
@@ -71,7 +71,7 @@ class TreatmentPhotoController extends Controller
     public function destroy(
         Request $request,
         Treatment $treatment,
-        Session $session,
+        TreatmentSession $session,
         TreatmentPhoto $photo
     ): JsonResponse {
         Gate::authorize('is-dentist');

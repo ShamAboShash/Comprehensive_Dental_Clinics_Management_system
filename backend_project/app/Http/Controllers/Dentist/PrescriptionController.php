@@ -6,8 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Dentist\StorePrescriptionRequest;
 use App\Http\Requests\Dentist\UpdatePrescriptionRequest;
 use App\Http\Resources\Dentist\PrescriptionResource;
+use App\Models\DrugInteraction;
 use App\Models\Prescription;
-use App\Models\Session;
+use App\Models\TreatmentSession;
 use App\Models\Treatment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,13 +22,37 @@ class PrescriptionController extends Controller
     }
 
     // ---------------------------------------------------------------
+    // Helper: check interactions and build the warning response
+    // Returns null if no interactions (or overridden), otherwise the response array
+    // ---------------------------------------------------------------
+    private function checkInteractions($patientMedIds, $newMedIds): ?array
+    {
+        $interactions = DrugInteraction::findInteractions($patientMedIds, $newMedIds);
+
+        if ($interactions->isEmpty()) {
+            return null;
+        }
+
+        return [
+            'message'      => 'تحذير: توجد تفاعلات دوائية محتملة بين الوصفة الجديدة وأدوية المريض الحالية.',
+            'interactions' => $interactions->map(fn($i) => [
+                'medication_1' => $i->medication1->scientific_name,
+                'medication_2' => $i->medication2->scientific_name,
+                'severity'     => $i->severity,
+                'description'  => $i->description,
+            ]),
+            'can_override' => true,
+        ];
+    }
+
+    // ---------------------------------------------------------------
     // POST /dentist/treatments/{treatment}/sessions/{session}/prescription
     // API #15 — Add prescription to a session (one per session)
     // ---------------------------------------------------------------
     public function store(
         StorePrescriptionRequest $request,
         Treatment $treatment,
-        Session $session
+        TreatmentSession $session
     ): JsonResponse {
         Gate::authorize('is-dentist');
 
@@ -47,7 +72,6 @@ class PrescriptionController extends Controller
             ], 403);
         }
 
-        // One prescription per session
         if ($session->prescription()->exists()) {
             return response()->json([
                 'success' => false,
@@ -55,14 +79,33 @@ class PrescriptionController extends Controller
             ], 422);
         }
 
+        // -------------------------------------------------------
+        // Drug interaction check
+        // -------------------------------------------------------
+        $patient       = $treatment->patient->load('medications');
+        $patientMedIds = $patient->medications->pluck('id');
+        $newMedIds     = collect($request->medications)->pluck('medication_id');
+
+        $warning = $this->checkInteractions($patientMedIds, $newMedIds);
+
+        if ($warning && !$request->boolean('force')) {
+            return response()->json(array_merge(
+                ['success' => false],
+                $warning
+            ), 422);
+        }
+
+        // -------------------------------------------------------
+        // Save the prescription (log override if forced)
+        // -------------------------------------------------------
         $prescription = Prescription::create([
-            'session_id' => $session->id,
-            'dentist_id' => $dentistId,
-            'patient_id' => $treatment->patient_id,
-            'notes'      => $request->notes,
+            'session_id'            => $session->id,
+            'dentist_id'            => $dentistId,
+            'patient_id'            => $treatment->patient_id,
+            'notes'                 => $request->notes,
+            'interaction_override'  => $warning ? true : false,
         ]);
 
-        // Attach medications via pivot
         $pivot = collect($request->medications)->mapWithKeys(
             fn($med) => [
                 $med['medication_id'] => [
@@ -91,7 +134,7 @@ class PrescriptionController extends Controller
     public function update(
         UpdatePrescriptionRequest $request,
         Treatment $treatment,
-        Session $session
+        TreatmentSession $session
     ): JsonResponse {
         Gate::authorize('is-dentist');
 
@@ -120,12 +163,23 @@ class PrescriptionController extends Controller
             ], 404);
         }
 
-        if ($request->filled('notes')) {
-            $prescription->update(['notes' => $request->notes]);
-        }
-
-        // Sync replaces all medications with the new list
+        // -------------------------------------------------------
+        // Drug interaction check on updated medications
+        // -------------------------------------------------------
         if ($request->has('medications')) {
+            $patient       = $treatment->patient->load('medications');
+            $patientMedIds = $patient->medications->pluck('id');
+            $newMedIds     = collect($request->medications)->pluck('medication_id');
+
+            $warning = $this->checkInteractions($patientMedIds, $newMedIds);
+
+            if ($warning && !$request->boolean('force')) {
+                return response()->json(array_merge(
+                    ['success' => false],
+                    $warning
+                ), 422);
+            }
+
             $pivot = collect($request->medications)->mapWithKeys(
                 fn($med) => [
                     $med['medication_id'] => [
@@ -138,6 +192,15 @@ class PrescriptionController extends Controller
             );
 
             $prescription->medications()->sync($pivot);
+
+            // Update override flag based on this update's outcome
+            $prescription->update([
+                'interaction_override' => $warning ? true : false,
+            ]);
+        }
+
+        if ($request->filled('notes')) {
+            $prescription->update(['notes' => $request->notes]);
         }
 
         $prescription->load('medications');

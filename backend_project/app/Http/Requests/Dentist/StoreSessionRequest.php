@@ -16,6 +16,12 @@ class StoreSessionRequest extends FormRequest
             'actual_end_time'   => 'nullable|date|after:actual_start_time',
             'status'            => 'sometimes|in:completed,missed',
             'notes'             => 'nullable|string|max:2000',
+
+            // Tooth treatments included at session creation
+            'tooth_treatments'                  => 'nullable|array',
+            'tooth_treatments.*.tooth_number'   => 'required|integer|min:11|max:48',
+            'tooth_treatments.*.procedure_id'   => 'required|exists:procedures,id',
+            'tooth_treatments.*.notes'          => 'nullable|string|max:1000',
         ];
     }
 

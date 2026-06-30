@@ -10,6 +10,7 @@ class Prescription extends Model
         'session_id',
         'dentist_id',
         'patient_id',
+        'interaction_override',
         'notes',
     ];
 

@@ -20,6 +20,8 @@ class SessionDetailResource extends JsonResource
                 'name' => $this->dentist->employee->user->name,
             ]),
             'notes'             => $this->notes,
+            'session_cost'      => $this->calculateCost(),
+
 
             'tooth_treatments'  => ToothTreatmentResource::collection(
                 $this->whenLoaded('toothTreatments')

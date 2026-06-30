@@ -15,7 +15,7 @@ use App\Http\Controllers\Dentist\SessionController;
 use App\Http\Controllers\Dentist\ToothTreatmentController;
 use App\Http\Controllers\Dentist\PrescriptionController;
 use App\Http\Controllers\Dentist\TreatmentPhotoController;
-use App\Http\Controllers\Dentist\LookupController;
+use App\Http\Controllers\Secretary\AppointmentController as SecretaryAppointmentController;
 use App\Http\Controllers\Employee\EmployeeProfileController;
 use App\Http\Controllers\Patient\PatientProfileController;
 use App\Http\Controllers\Generals\ShowThingsController;
@@ -50,18 +50,26 @@ Route::prefix('forgotPassword')->group(function () {
     Route::post('/resetPassword', [ForgotPasswordController::class, 'resetPassword']);
 });
 
-Route::get('/roles', [ShowThingsController::class, 'roles']);
-
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
-
-    Route::get('/medications',       [ShowThingsController::class,      'medications']);
-    Route::get('/specializations',   [ShowThingsController::class,      'specializations']);
-    Route::get('/diseaseCategories', [ShowThingsController::class,      'diseaseCategories']);
     Route::get('/showAllEmployees',  [EmployeeProfileController::class, 'showAllEmployees']);
     Route::get('/showAllPatients',   [PatientProfileController::class,  'showAllPatients']);
     Route::get('/showAllDentists',   [DentistProfileController::class,  'showAllDentists']);
 
 });
+
+    Route::get('/roles', [ShowThingsController::class, 'roles']);
+    Route::get('/medications',       [ShowThingsController::class,      'medications']);
+    Route::get('/specializations',   [ShowThingsController::class,      'specializations']);
+    Route::get('/diseaseCategories', [ShowThingsController::class,      'diseaseCategories']);
+    Route::get('/appointmentTypes',         [ShowThingsController::class, 'appointmentTypes']);
+    Route::get('/treatmentTypes',           [ShowThingsController::class, 'treatmentTypes']);
+    Route::get('/procedures',               [ShowThingsController::class, 'procedures']);
+    Route::get('/labOrderTypeCategories',   [ShowThingsController::class, 'labOrderTypeCategories']);
+    Route::get('/labOrderTypes',            [ShowThingsController::class, 'labOrderTypes']);
+
+
+
+
 
 // ====================== EMPLOYEE ======================
 
@@ -103,7 +111,10 @@ Route::prefix('patient')->group(function () {
 
 // ====================== SECRETARY ======================
 
-
+Route::prefix('secretary')->middleware(['auth:sanctum', 'active'])->group(function () {
+    Route::get('/showAllAppointments',  [SecretaryAppointmentController::class, 'index']);
+    Route::post('/addAppointment', [SecretaryAppointmentController::class, 'store']);
+});
 
 // ====================== ADMIN ======================
 
@@ -152,46 +163,23 @@ Route::prefix('dentist')->middleware(['auth:sanctum', 'active'])->group(function
     Route::post('/updateTreatmentDetails/{treatment}',                      [TreatmentController::class, 'update']);
 
     // Sessions
-    Route::get('/showAllTreatmentSesions/{treatment}',             [SessionController::class, 'index']);
     Route::get('/showTreatmentSession/{treatment}/{session}',   [SessionController::class, 'show']);
     Route::post('/addTreatmentSession/{treatment}',            [SessionController::class, 'store']);
     Route::post('/updateTreatmentSession/{treatment}/{session}',   [SessionController::class, 'update']);
 
-    // Tooth Treatments — API #13, #14
-    Route::post(
-        '/treatments/{treatment}/sessions/{session}/tooth-treatments',
-        [ToothTreatmentController::class, 'store']
-    );
-    Route::post(
-        '/treatments/{treatment}/sessions/{session}/tooth-treatments/{toothTreatment}',
-        [ToothTreatmentController::class, 'destroy']
-    );
+    // Tooth Treatments
+    Route::post('/addToothTreatment/{treatment}/{session}',[ToothTreatmentController::class, 'store']);
+    Route::post('/deleteToothTreatment/{treatment}/{session}/{toothTreatment}',[ToothTreatmentController::class, 'destroy']);
 
-    // Prescriptions — API #15, #16
-    Route::post(
-        '/addPrescription/{treatment}/{session}',
-        [PrescriptionController::class, 'store']
-    );
-    Route::post(
-        '/updatePrescription/{treatment}/{session}',
-        [PrescriptionController::class, 'update']
-    );
+    // Prescriptions
+    Route::post('/addPrescription/{treatment}/{session}',[PrescriptionController::class, 'store']);
+    Route::post('/updatePrescription/{treatment}/{session}',[PrescriptionController::class, 'update'] );
 
-    // Treatment Photos — API #17, #18
-    Route::post(
-        '/addTreatmentPhoto/{treatment}/{session}',
-        [TreatmentPhotoController::class, 'store']
-    );
-    Route::post(
-        '/updateTreatmentPhoto/{treatment}/{session}/{photo}',
-        [TreatmentPhotoController::class, 'update']
-    );
-    Route::post(
-        '/deleteTreatmentPhoto/{treatment}/{session}/{photo}',
-        [TreatmentPhotoController::class, 'destroy']
-    );
+    // Treatment Photos
+    Route::post('/addTreatmentPhoto/{treatment}/{session}',[TreatmentPhotoController::class, 'store']);
+    Route::post('/deleteTreatmentPhoto/{treatment}/{session}/{photo}',[TreatmentPhotoController::class, 'destroy']);
 
-    // Lab Orders — API #19, #20, #21, #22, #23, #27
+    // Lab Orders
     Route::get('/showAllLabOrders',                                  [LabOrderController::class, 'index']);
     Route::post('/addLabOrder',                                 [LabOrderController::class, 'store']);
     Route::get('/showLabOrderDetails/{labOrder}',                       [LabOrderController::class, 'show']);
@@ -201,9 +189,6 @@ Route::prefix('dentist')->middleware(['auth:sanctum', 'active'])->group(function
         [LabOrderController::class, 'respondToModification']
     );
 
-    // Lookups — API #24, #25
-    Route::get('/lookups/procedures',                          [LookupController::class, 'procedures']);
-    Route::get('/lookups/lab-order-types',                     [LookupController::class, 'labOrderTypes']);
 
 });
 // ====================== WAREHOUSE MANAGER ======================

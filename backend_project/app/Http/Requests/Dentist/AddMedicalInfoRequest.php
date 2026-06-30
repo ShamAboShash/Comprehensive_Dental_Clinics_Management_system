@@ -11,23 +11,24 @@ class AddMedicalInfoRequest extends FormRequest
         return true;
     }
 
-    public function rules(): array
+     public function rules(): array
     {
-        return [
-            'allergies'              => 'nullable|array',
-            'allergies.*'            => 'required|string|max:255',
+       return [
+            'allergies'                       => ['array'],
+            'allergies.*'                     => ['string'],
 
-            'chronic_diseases'                   => 'nullable|array',
-            'chronic_diseases.*.category_id'     => 'nullable|exists:disease_categories,id',
-            'chronic_diseases.*.problem_name'    => 'required|string|max:255',
+            'chronic_diseases'               => ['array'],
+            'chronic_diseases.*.category_id' => ['required', 'exists:disease_categories,id'],
             'chronic_diseases.*.details'         => 'nullable|string|max:1000',
-            'chronic_diseases.*.severity'        => 'nullable|in:mild,moderate,severe',
+            'chronic_diseases.*.problem_name' => ['required', 'string'],
+            'chronic_diseases.*.severity'     => ['nullable', 'string'],
 
-            'medications'                        => 'nullable|array',
-            'medications.*.medication_id'        => 'required|exists:medications,id',
-            'medications.*.dosage'               => 'nullable|string|max:255',
-            'medications.*.frequency'            => 'nullable|string|max:255',
-            'medications.*.notes'                => 'nullable|string|max:500',
+            'medications'                     => ['array'],
+            'medications.*.medication_id'     => ['required', 'exists:medications,id'],
+            'medications.*.dosage'            => ['nullable', 'string'],
+            'medications.*.frequency'         => ['nullable', 'string'],
+            'medications.*.notes'             => 'nullable|string|max:500',
+
         ];
     }
 

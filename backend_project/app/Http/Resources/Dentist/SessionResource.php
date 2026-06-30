@@ -19,6 +19,7 @@ class SessionResource extends JsonResource
                 'name' => $this->dentist->employee->user->name,
             ]),
             'notes'             => $this->notes,
+            'session_cost'      => $this->calculateCost(),
         ];
     }
 }

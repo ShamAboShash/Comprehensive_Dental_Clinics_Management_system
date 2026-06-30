@@ -30,7 +30,7 @@ class AppointmentController extends Controller
     Gate::authorize('is-dentist');
 
     $dentistId    = $this->getDentistId($request);
-    $appointments = Appointment::with(['patient.user', 'appointmentType'])
+    $appointments = Appointment::with(['patient.user', 'appointmentType','treatment'])
         ->where('dentist_id', $dentistId)
         ->whereDate('appointment_time', Carbon::today())
         ->orderBy('appointment_time')
@@ -53,7 +53,7 @@ public function yesterday(Request $request): JsonResponse
     Gate::authorize('is-dentist');
 
     $dentistId    = $this->getDentistId($request);
-    $appointments = Appointment::with(['patient.user', 'appointmentType'])
+    $appointments = Appointment::with(['patient.user', 'appointmentType','treatment'])
         ->where('dentist_id', $dentistId)
         ->whereDate('appointment_time', Carbon::yesterday())
         ->orderBy('appointment_time')
@@ -79,7 +79,7 @@ public function weekly(Request $request): JsonResponse
     $start     = Carbon::now()->startOfWeek(Carbon::SUNDAY);
     $end       = Carbon::now()->endOfWeek(Carbon::SATURDAY);
 
-    $appointments = Appointment::with(['patient.user', 'appointmentType'])
+    $appointments = Appointment::with(['patient.user', 'appointmentType','treatment'])
         ->where('dentist_id', $dentistId)
         ->whereBetween('appointment_time', [$start, $end])
         ->orderBy('appointment_time')
@@ -104,21 +104,55 @@ public function monthly(Request $request): JsonResponse
 
     $dentistId = $this->getDentistId($request);
 
-    $appointments = Appointment::with(['patient.user', 'appointmentType'])
-        ->where('dentist_id', $dentistId)
-        ->whereMonth('appointment_time', Carbon::now()->month)
-        ->whereYear('appointment_time',  Carbon::now()->year)
-        ->orderBy('appointment_time')
-        ->get();
+    $monthStart = Carbon::now()->startOfMonth();
+    $monthEnd   = Carbon::now()->endOfMonth();
+
+    $appointments = Appointment::with([
+        'patient.user',
+        'appointmentType',
+        'treatment',
+    ])
+    ->where('dentist_id', $dentistId)
+    ->whereMonth('appointment_time', Carbon::now()->month)
+    ->whereYear('appointment_time', Carbon::now()->year)
+    ->orderBy('appointment_time')
+    ->get();
+
+    // Slice into weeks
+    $weeks = [];
+    $weekStart = $monthStart->copy();
+    $weekNumber = 1;
+
+    while ($weekStart->lte($monthEnd)) {
+        $weekEnd = $weekStart->copy()->endOfWeek(Carbon::FRIDAY);
+
+        // Don't go past month end
+        if ($weekEnd->gt($monthEnd)) {
+            $weekEnd = $monthEnd->copy();
+        }
+
+        $weekAppointments = $appointments->filter(
+            fn($a) => $a->appointment_time->between($weekStart, $weekEnd)
+        )->values();
+
+        $weeks[] = [
+            'week'       => $weekNumber,
+            'start_date' => $weekStart->toDateString(),
+            'end_date'   => $weekEnd->toDateString(),
+            'count'      => $weekAppointments->count(),
+            'data'       => AppointmentResource::collection($weekAppointments),
+        ];
+
+        $weekStart = $weekEnd->copy()->addDay()->startOfDay();
+        $weekNumber++;
+    }
 
     return response()->json([
         'success' => true,
         'month'   => Carbon::now()->format('Y-m'),
-        'count'   => $appointments->count(),
-        'data'    => AppointmentResource::collection($appointments),
+        'weeks'   => $weeks,
     ]);
 }
-
     // ---------------------------------------------------------------
     // GET /dentist/appointments/{appointment}
     // Show single appointment detail

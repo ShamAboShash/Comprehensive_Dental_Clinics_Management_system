@@ -52,7 +52,7 @@ class TreatmentController extends Controller
             ], 403);
         }
 
-        $treatments = Treatment::with(['treatmentType', 'dentist.employee.user'])
+        $treatments = Treatment::with(['treatmentType', 'dentist.employee.user', 'sessions.toothTreatments.procedure'])
             ->where('patient_id', $patient->id)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -87,6 +87,8 @@ class TreatmentController extends Controller
             'dentist.employee.user',
             'patient.user',
             'sessions.dentist.employee.user',
+            'sessions.toothTreatments.procedure',
+
         ]);
 
         return response()->json([

@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Dentist\StoreToothTreatmentRequest;
 use App\Http\Resources\Dentist\ToothTreatmentResource;
 use App\Models\Appointment;
-use App\Models\Session;
+use App\Models\TreatmentSession;
 use App\Models\ToothTreatment;
 use App\Models\Treatment;
 use Illuminate\Http\JsonResponse;
@@ -23,7 +23,7 @@ class ToothTreatmentController extends Controller
     // ---------------------------------------------------------------
     // Verify dentist owns this session
     // ---------------------------------------------------------------
-    private function ownsSession(int $dentistId, Session $session): bool
+    private function ownsSession(int $dentistId, TreatmentSession $session): bool
     {
         return $session->dentist_id === $dentistId;
     }
@@ -35,7 +35,7 @@ class ToothTreatmentController extends Controller
     public function store(
         StoreToothTreatmentRequest $request,
         Treatment $treatment,
-        Session $session
+        TreatmentSession $session
     ): JsonResponse {
         Gate::authorize('is-dentist');
 
@@ -82,7 +82,7 @@ class ToothTreatmentController extends Controller
     public function destroy(
         Request $request,
         Treatment $treatment,
-        Session $session,
+        TreatmentSession $session,
         ToothTreatment $toothTreatment
     ): JsonResponse {
         Gate::authorize('is-dentist');

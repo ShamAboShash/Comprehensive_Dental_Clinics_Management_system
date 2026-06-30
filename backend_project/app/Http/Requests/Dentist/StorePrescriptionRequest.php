@@ -12,6 +12,7 @@ class StorePrescriptionRequest extends FormRequest
     {
         return [
             'notes'                          => 'nullable|string|max:2000',
+        'force' => 'sometimes|boolean',   
 
             'medications'                    => 'required|array|min:1',
             'medications.*.medication_id'    => 'required|exists:medications,id',
@@ -19,6 +20,7 @@ class StorePrescriptionRequest extends FormRequest
             'medications.*.frequency'        => 'required|string|max:255',
             'medications.*.duration'         => 'nullable|string|max:255',
             'medications.*.notes'            => 'nullable|string|max:500',
+
         ];
     }
 
