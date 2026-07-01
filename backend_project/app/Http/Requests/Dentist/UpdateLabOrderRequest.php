@@ -11,7 +11,6 @@ class UpdateLabOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'session_id'              => 'nullable|exists:treatment_sessions,id',
             'delivery_date_requested' => 'nullable|date|after:today',
             'notes'                   => 'nullable|string|max:2000',
 
@@ -27,8 +26,6 @@ class UpdateLabOrderRequest extends FormRequest
             'delivery_date_requested.after'       => 'تاريخ التسليم يجب أن يكون في المستقبل.',
             'items.*.lab_order_type_id.required'  => 'نوع العنصر المخبري مطلوب.',
             'items.*.lab_order_type_id.exists'    => 'نوع العنصر المخبري غير موجود.',
-            'items.*.quantity.required'           => 'الكمية مطلوبة.',
-            'items.*.quantity.min'                => 'الكمية يجب أن تكون 1 على الأقل.',
         ];
     }
 }

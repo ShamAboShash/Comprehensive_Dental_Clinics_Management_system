@@ -18,7 +18,6 @@ class StoreLabOrderRequest extends FormRequest
 
             'items'                         => 'required|array|min:1',
             'items.*.lab_order_type_id'     => 'required|exists:lab_order_types,id',
-            'items.*.quantity'              => 'required|integer|min:1',
             'items.*.tooth_number'          => 'nullable|integer|min:11|max:48',
             'items.*.notes'                 => 'nullable|string|max:1000',
         ];

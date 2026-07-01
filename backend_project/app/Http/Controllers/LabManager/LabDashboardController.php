@@ -20,22 +20,22 @@ class LabDashboardController extends Controller
     }
 
     // GET /lab/dashboard
-    public function index()
-    {
-        // Call each public method and extract the 'data' part
-        $ordersData = $this->orderCounts()->getData(true);
-        $techniciansData = $this->technicianCounts()->getData(true);
-        $stockData = $this->stockCounts()->getData(true);
+    // public function index()
+    // {
+    //     // Call each public method and extract the 'data' part
+    //     $ordersData = $this->orderCounts()->getData(true);
+    //     $techniciansData = $this->technicianCounts()->getData(true);
+    //     $stockData = $this->stockCounts()->getData(true);
 
-        return response()->json([
-            'success' => true,
-            'data'    => [
-                'orders'      => $ordersData['data'],
-                'technicians' => $techniciansData['data'],
-                'stock'       => $stockData['data'],
-            ],
-        ]);
-    }
+    //     return response()->json([
+    //         'success' => true,
+    //         'data'    => [
+    //             'orders'      => $ordersData['data'],
+    //             'technicians' => $techniciansData['data'],
+    //             'stock'       => $stockData['data'],
+    //         ],
+    //     ]);
+    // }
 
     // GET /lab/dashboard/orders
     public function orderCounts()

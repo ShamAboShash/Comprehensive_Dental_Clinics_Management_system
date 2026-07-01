@@ -11,14 +11,17 @@ class StoreLabOrderModificationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'dentist_response' => 'required|string|max:2000',
+            'modification_details' => 'required|string|max:2000',
+            'fault'                => 'required|in:dentist,lab',
         ];
     }
 
     public function messages(): array
     {
         return [
-            'dentist_response.required' => 'رد الطبيب على طلب التعديل مطلوب.',
+            'modification_details.required' => 'تفاصيل التعديل مطلوبة.',
+            'fault.required'                => 'تحديد الجهة المسؤولة عن التعديل مطلوب.',
+            'fault.in'                      => 'الجهة المسؤولة يجب أن تكون: dentist أو lab.',
         ];
     }
 }

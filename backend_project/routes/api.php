@@ -12,6 +12,7 @@ use App\Http\Controllers\Dentist\WorkScheduleController;
 use App\Http\Controllers\Dentist\PatientController;
 use App\Http\Controllers\Dentist\TreatmentController;
 use App\Http\Controllers\Dentist\SessionController;
+use App\Http\Controllers\Dentist\LabOrderController as DentistLabOrderController;
 use App\Http\Controllers\Dentist\ToothTreatmentController;
 use App\Http\Controllers\Dentist\PrescriptionController;
 use App\Http\Controllers\Dentist\TreatmentPhotoController;
@@ -180,15 +181,14 @@ Route::prefix('dentist')->middleware(['auth:sanctum', 'active'])->group(function
     Route::post('/deleteTreatmentPhoto/{treatment}/{session}/{photo}',[TreatmentPhotoController::class, 'destroy']);
 
     // Lab Orders
-    Route::get('/showAllLabOrders',                                  [LabOrderController::class, 'index']);
-    Route::post('/addLabOrder',                                 [LabOrderController::class, 'store']);
-    Route::get('/showLabOrderDetails/{labOrder}',                       [LabOrderController::class, 'show']);
-    Route::post('/updateLabOrder/{labOrder}',                       [LabOrderController::class, 'update']);
-    Route::post('/cancelLabOrder/{labOrder}',              [LabOrderController::class, 'cancel']);
-    Route::post('/responseToLabOrderModification/{labOrder}/{modification}',
-        [LabOrderController::class, 'respondToModification']
-    );
-
+    Route::get('/showAllLabOrders',                                  [DentistLabOrderController::class, 'index']);
+    Route::post('/addLabOrder',                                 [DentistLabOrderController::class, 'store']);
+    Route::get('/showLabOrderDetails/{labOrder}',                       [DentistLabOrderController::class, 'show']);
+    Route::post('/updateLabOrder/{labOrder}',                       [DentistLabOrderController::class, 'update']);
+    Route::post('/cancelLabOrder/{labOrder}',              [DentistLabOrderController::class, 'cancel']);
+    Route::post('/addLabOrderModification/{labOrder}',      [DentistLabOrderController::class, 'storeModification']);
+    Route::post('/updateLabOrderModification/{labOrder}/{modification}', [DentistLabOrderController::class, 'updateModification']);
+    Route::post('/cancelLabOrderModification/{labOrder}/{modification}', [DentistLabOrderController::class, 'cancelModification']);
 
 });
 // ====================== WAREHOUSE MANAGER ======================
@@ -237,7 +237,6 @@ Route::prefix('dentist')->middleware(['auth:sanctum', 'active'])->group(function
 Route::prefix('labManager')->middleware(['auth:sanctum', 'active'])->group(function () {
 
     // Dashboard
-    // Route::get('/dashboard', [LabDashboardController::class, 'index']);
     Route::get('countOrders', [LabDashboardController::class, 'orderCounts']);
     Route::get('countTechnicians', [LabDashboardController::class, 'technicianCounts']);
     Route::get('countStock', [LabDashboardController::class, 'stockCounts']);
@@ -261,7 +260,6 @@ Route::prefix('labManager')->middleware(['auth:sanctum', 'active'])->group(funct
     Route::get('showAllLabOrders',                 [LabOrderController::class, 'index']);
     Route::get('showAllTodayLabOrders',            [LabOrderController::class, 'today']);
     Route::get('showLabOrder/{id}',                   [LabOrderController::class, 'show']);
-    // Route::post('setStatusPending/{id}',     [LabOrderController::class, 'setPending']);
     Route::post('setStatusInProgress/{id}', [LabOrderController::class, 'setInProgress']);
     Route::post('setStatusCompleted/{id}',   [LabOrderController::class, 'setCompleted']);
     Route::post('setStatusCancelled/{id}',   [LabOrderController::class, 'setCancelled']);
@@ -280,7 +278,7 @@ Route::prefix('labManager')->middleware(['auth:sanctum', 'active'])->group(funct
     Route::post('subtractFromStock/{id}',   [LabStockController::class, 'subtract']);
     Route::post('notifyLowStock',    [LabStockController::class, 'notifyShort']);
 
-    // Warehouse Materials (read-only)
+    // Warehouse Materials
     Route::get('showAllWarehouseMaterials',      [WarehouseMaterialController::class, 'index']);
     Route::get('showWarehouseMaterial/{id}', [WarehouseMaterialController::class, 'show']);
 

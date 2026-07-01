@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Dentist\StoreLabOrderRequest;
 use App\Http\Requests\Dentist\UpdateLabOrderRequest;
 use App\Http\Requests\Dentist\StoreLabOrderModificationRequest;
+use App\Http\Requests\Dentist\UpdateLabOrderModificationRequest;
 use App\Http\Resources\Dentist\LabOrderDetailResource;
+use App\Http\Resources\Dentist\LabOrderModificationResource;
 use App\Http\Resources\Dentist\LabOrderResource;
 use App\Models\LabOrder;
 use App\Models\LabOrderItem;
@@ -253,12 +255,49 @@ class LabOrderController extends Controller
         ]);
     }
 
-    // ---------------------------------------------------------------
-    // POST /dentist/lab-orders/{labOrder}/modifications/{modification}/respond
-    // API #27 — Dentist responds to a lab modification request
-    // ---------------------------------------------------------------
-    public function respondToModification(
+     public function storeModification(
         StoreLabOrderModificationRequest $request,
+        LabOrder $labOrder
+    ): JsonResponse {
+        Gate::authorize('is-dentist');
+
+        $dentistId = $this->getDentistId($request);
+
+        if ($labOrder->dentist_id !== $dentistId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'هذا الطلب لا ينتمي إليك.',
+            ], 403);
+        }
+
+        // Can only request modifications on in_progress or completed orders
+        if (!in_array($labOrder->status, ['completed'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لا يمكن إضافة طلب تعديل إلا للطلبات المكتملة.',
+            ], 422);
+        }
+
+        $modification = LabOrderModification::create([
+            'lab_order_id'         => $labOrder->id,
+            'modification_details' => $request->modification_details,
+            'fault'                => $request->fault,
+            'status'               => 'pending',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم إرسال طلب التعديل بنجاح.',
+            'data' => new LabOrderModificationResource($modification),
+        ], 201);
+    }
+
+    // ---------------------------------------------------------------
+    // POST /dentist/lab-orders/{labOrder}/modifications/{modification}/update
+    // Edit a modification (only when status = pending)
+    // ---------------------------------------------------------------
+    public function updateModification(
+        UpdateLabOrderModificationRequest $request,
         LabOrder $labOrder,
         LabOrderModification $modification
     ): JsonResponse {
@@ -280,26 +319,65 @@ class LabOrderController extends Controller
             ], 404);
         }
 
-        if ($modification->dentist_response) {
+        if ($modification->status !== 'pending') {
             return response()->json([
                 'success' => false,
-                'message' => 'لقد قمت بالرد على هذا التعديل مسبقاً.',
+                'message' => 'لا يمكن تعديل الطلب بعد أن تمت معالجته من قبل المختبر.',
             ], 422);
         }
 
-        $modification->update([
-            'dentist_response' => $request->dentist_response,
-        ]);
+        $modification->update($request->only([
+            'modification_details',
+            'fault',
+        ]));
 
         return response()->json([
             'success' => true,
-            'message' => 'تم إرسال ردك على طلب التعديل بنجاح.',
-            'data'    => [
-                'id'               => $modification->id,
-                'fault'            => $modification->fault,
-                'description'      => $modification->description,
-                'dentist_response' => $modification->dentist_response,
-            ],
+            'message' => 'تم تحديث طلب التعديل بنجاح.',
+            'data'    => new LabOrderModificationResource($modification->fresh()),
+        ]);
+    }
+
+    // ---------------------------------------------------------------
+    // POST /dentist/lab-orders/{labOrder}/modifications/{modification}/cancel
+    // Cancel a modification (only when status = pending)
+    // ---------------------------------------------------------------
+    public function cancelModification(
+        Request $request,
+        LabOrder $labOrder,
+        LabOrderModification $modification
+    ): JsonResponse {
+        Gate::authorize('is-dentist');
+
+        $dentistId = $this->getDentistId($request);
+
+        if ($labOrder->dentist_id !== $dentistId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'هذا الطلب لا ينتمي إليك.',
+            ], 403);
+        }
+
+        if ($modification->lab_order_id !== $labOrder->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'هذا التعديل لا ينتمي إلى هذا الطلب.',
+            ], 404);
+        }
+
+        if ($modification->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'لا يمكن إلغاء الطلب بعد أن تمت معالجته من قبل المختبر.',
+            ], 422);
+        }
+
+        $modification->update(['status' => 'rejected']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم إلغاء طلب التعديل بنجاح.',
+            'data'    => new LabOrderModificationResource($modification->fresh()),
         ]);
     }
 }
