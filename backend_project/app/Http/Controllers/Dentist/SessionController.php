@@ -21,10 +21,6 @@ class SessionController extends Controller
         return $request->user()->employee->dentist->id;
     }
 
-    // ---------------------------------------------------------------
-    // GET /dentist/treatments/{treatment}/sessions/{session}
-    // API #7 — Session detail with tooth treatments, photos, prescription
-    // ---------------------------------------------------------------
 
     // ---------------------------------------------------------------
     // GET /dentist/treatments/{treatment}/sessions
@@ -49,8 +45,7 @@ class SessionController extends Controller
 
         // Access check — dentist must have appointment with patient
         $patient = $treatment->patient;
-        $hasAccess = Appointment::where('dentist_id', $dentistId)
-            ->where('patient_id', $patient->id)
+        $hasAccess = Appointment::where('patient_id', $patient->id)
             ->whereNotIn('status', ['cancelled', 'rejected'])
             ->exists();
 

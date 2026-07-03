@@ -245,12 +245,7 @@ class PatientAuthController extends Controller
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
-        if (!Gate::allows('login-patient')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'غير مصرح لك بالوصول.'
-            ], 403);
-        }
+       
 
         $user->tokens()->delete();
 

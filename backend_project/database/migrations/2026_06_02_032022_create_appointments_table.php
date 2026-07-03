@@ -33,6 +33,7 @@ return new class extends Migration
             //     ->constrained('users')
             //     ->onDelete('cascade');
 
+
             $table->enum('type', [
                 'emergency',
                 'new_treatment',
@@ -53,6 +54,8 @@ return new class extends Migration
             $table->dateTime('appointment_time')->nullable();
             $table->string('rejection_reason')->nullable();
             $table->text('notes')->nullable();
+            $table->tinyInteger('reschedule_count')->default(0);
+
             $table->timestamps();
         });
     }

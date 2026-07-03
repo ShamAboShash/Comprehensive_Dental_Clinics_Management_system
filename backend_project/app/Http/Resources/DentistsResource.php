@@ -21,7 +21,9 @@ class DentistsResource extends JsonResource
             'email'           => $this->email,
             'phone'           => $this->phone,
             'role'            => $this->role->value,
-            'specialization'  => $this->employee?->dentist?->specialization?->name,
+            'specialization_name'  => $this->employee?->dentist?->specialization?->name,
+            'specialization_name_en'  => $this->employee?->dentist?->specialization?->name_en,
+
             'profile_picture' => $this->profile_picture_url,
         ];
     }

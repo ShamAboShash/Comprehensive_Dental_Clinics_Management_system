@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\DentistController;
+
 use App\Http\Controllers\Dentist\DentistProfileController;
 use App\Http\Controllers\Dentist\AppointmentController;
 use App\Http\Controllers\Dentist\WorkScheduleController;
@@ -16,10 +17,27 @@ use App\Http\Controllers\Dentist\LabOrderController as DentistLabOrderController
 use App\Http\Controllers\Dentist\ToothTreatmentController;
 use App\Http\Controllers\Dentist\PrescriptionController;
 use App\Http\Controllers\Dentist\TreatmentPhotoController;
+
 use App\Http\Controllers\Secretary\AppointmentController as SecretaryAppointmentController;
+
 use App\Http\Controllers\Employee\EmployeeProfileController;
+
 use App\Http\Controllers\Patient\PatientProfileController;
+use App\Http\Controllers\Patient\PatientAppointmentController;
+use App\Http\Controllers\Patient\DentistScheduleController;
+use App\Http\Controllers\Patient\PatientDentistController;
+use App\Http\Controllers\Patient\PatientDentistRatingController;
+use App\Http\Controllers\Patient\PatientLookupController;
+use App\Http\Controllers\Patient\PatientTreatmentController;
+use App\Http\Controllers\Patient\PatientPrescriptionController;
+use App\Http\Controllers\Patient\PatientTreatmentPhotoController;
+use App\Http\Controllers\Patient\PatientComplaintController;
+use App\Http\Controllers\Patient\PatientInvoiceController;
+use App\Http\Controllers\Patient\PatientOfferController;
+use App\Http\Controllers\Patient\PatientNotificationController;
+
 use App\Http\Controllers\Generals\ShowThingsController;
+
 use App\Http\Controllers\LabManager\LabDashboardController;
 use App\Http\Controllers\LabManager\LabItemController;
 use App\Http\Controllers\LabManager\LabOrderController;
@@ -29,12 +47,14 @@ use App\Http\Controllers\LabManager\MaterialRequestController;
 use App\Http\Controllers\LabManager\NotificationController;
 use App\Http\Controllers\LabManager\TechnicianController;
 use App\Http\Controllers\LabManager\WarehouseMaterialController;
+
 use App\Http\Controllers\WarehouseManager\MaterialController;
 use App\Http\Controllers\WarehouseManager\WarehouseStockController;
 use App\Http\Controllers\WarehouseManager\WarehouseMaterialRequestController;
 use App\Http\Controllers\WarehouseManager\PurchaseInvoiceController;
 use App\Http\Controllers\WarehouseManager\InventoryController;
 use App\Http\Controllers\WarehouseManager\ReportController;
+
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -58,20 +78,17 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
 });
 
-    Route::get('/roles', [ShowThingsController::class, 'roles']);
-    Route::get('/medications',       [ShowThingsController::class,      'medications']);
-    Route::get('/specializations',   [ShowThingsController::class,      'specializations']);
-    Route::get('/diseaseCategories', [ShowThingsController::class,      'diseaseCategories']);
-    Route::get('/appointmentTypes',         [ShowThingsController::class, 'appointmentTypes']);
-    Route::get('/treatmentTypes',           [ShowThingsController::class, 'treatmentTypes']);
-    Route::get('/procedures',               [ShowThingsController::class, 'procedures']);
-    Route::get('/labOrderTypeCategories',   [ShowThingsController::class, 'labOrderTypeCategories']);
-    Route::get('/labOrderTypes',            [ShowThingsController::class, 'labOrderTypes']);
+Route::get('/roles', [ShowThingsController::class, 'roles']);
+Route::get('/medications',       [ShowThingsController::class,      'medications']);
+Route::get('/specializations',   [ShowThingsController::class,      'specializations']);
+Route::get('/diseaseCategories', [ShowThingsController::class,      'diseaseCategories']);
+Route::get('/appointmentTypes',         [ShowThingsController::class, 'appointmentTypes']);
+Route::get('/treatmentTypes',           [ShowThingsController::class, 'treatmentTypes']);
+Route::get('/procedures',               [ShowThingsController::class, 'procedures']);
+Route::get('/labOrderTypeCategories',   [ShowThingsController::class, 'labOrderTypeCategories']);
+Route::get('/labOrderTypes',            [ShowThingsController::class, 'labOrderTypes']);
 
-
-
-
-
+//15
 // ====================== EMPLOYEE ======================
 
 Route::prefix('employee')->group(function () {
@@ -90,6 +107,7 @@ Route::prefix('employee')->group(function () {
     });
 
 });
+//7
 
 // ====================== PATIENT ======================
 
@@ -106,9 +124,51 @@ Route::prefix('patient')->group(function () {
         Route::get('/showProfile',  [PatientProfileController::class, 'showProfile']);
         Route::post('/editProfile', [PatientProfileController::class, 'editProfile']);
 
-    });
+        // Appointments
+    Route::get('showAppointments', [PatientAppointmentController::class, 'index']);
+    Route::get('showPreviousAppointments', [PatientAppointmentController::class, 'previous']);
+    Route::get('showAppointmentdetails/{id}', [PatientAppointmentController::class, 'show']);
+    Route::post('addAppointment', [PatientAppointmentController::class, 'store']);
+    Route::post('updateAppointments/{id}', [PatientAppointmentController::class, 'update']);
+    Route::post('cancelAppointment/{id}', [PatientAppointmentController::class, 'cancel']);
 
+    // Dentists
+    Route::get('showDentistsBySpecialization/{specialization_id}', [PatientDentistController::class, 'index']);
+
+    Route::get('showDentistSchedule/{dentist}/', [DentistScheduleController::class, 'availableSlots']);
+    Route::post('addDentistRate/{dentistId}', [PatientDentistRatingController::class, 'rate']);
+    Route::get('showDentistRate/{dentistId}', [PatientDentistRatingController::class, 'myRating']);
+    Route::get('showDentistDetails/{dentist}', [PatientDentistController::class, 'show']);
+
+    // Lookups
+    Route::get('center-info', [PatientLookupController::class, 'centerInfo']);
+
+    // Treatments
+    Route::get('treatments', [PatientTreatmentController::class, 'index']);
+    Route::get('treatments/{treatmentId}/invoice', [PatientInvoiceController::class, 'show']);
+    Route::get('treatments/{id}', [PatientTreatmentController::class, 'show']);
+
+    // Prescriptions
+    Route::get('prescriptions', [PatientPrescriptionController::class, 'index']);
+    Route::get('prescriptions/{id}', [PatientPrescriptionController::class, 'show']);
+
+    // Treatment photos
+    Route::get('treatment-photos', [PatientTreatmentPhotoController::class, 'index']);
+
+    // Complaints
+    Route::get('complaints', [PatientComplaintController::class, 'index']);
+    Route::post('complaints', [PatientComplaintController::class, 'store']);
+
+    // Invoices
+    Route::get('invoices/summary', [PatientInvoiceController::class, 'summary']);
+
+    // Offers
+    Route::get('offers', [PatientOfferController::class, 'index']);
+    Route::post('offers/{offerId}/apply', [PatientOfferController::class, 'apply']);
+
+    });
 });
+//7
 
 // ====================== SECRETARY ======================
 
@@ -116,6 +176,7 @@ Route::prefix('secretary')->middleware(['auth:sanctum', 'active'])->group(functi
     Route::get('/showAllAppointments',  [SecretaryAppointmentController::class, 'index']);
     Route::post('/addAppointment', [SecretaryAppointmentController::class, 'store']);
 });
+//1
 
 // ====================== ADMIN ======================
 
@@ -132,6 +193,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'active'])->group(function (
     Route::get('/showDentistDetails/{user}',         [DentistController::class,      'showDentistDetails']);
 
 });
+//9
 
 // ====================== DENTIST ======================
 
@@ -191,46 +253,7 @@ Route::prefix('dentist')->middleware(['auth:sanctum', 'active'])->group(function
     Route::post('/cancelLabOrderModification/{labOrder}/{modification}', [DentistLabOrderController::class, 'cancelModification']);
 
 });
-// ====================== WAREHOUSE MANAGER ======================
-
-// Route::prefix('warehouseManager')->middleware(['auth:sanctum', 'active'])->group(function () {
-
-//     // Materials
-//     Route::apiResource('materials', MaterialController::class);
-
-//     // Stock
-//     Route::get('stock/logs',     [WarehouseStockController::class, 'logs']);
-//     Route::post('stock/{id}',    [WarehouseStockController::class, 'adjust']);
-//     Route::apiResource('stock',  WarehouseStockController::class)->only(['index', 'show']);
-
-//     // Material Requests
-//     Route::get('material-requests',                  [WarehouseMaterialRequestController::class, 'index']);
-//     Route::get('material-requests/{id}',             [WarehouseMaterialRequestController::class, 'show']);
-//     Route::patch('material-requests/{id}/fulfill',   [WarehouseMaterialRequestController::class, 'fulfill']);
-//     Route::patch('material-requests/{id}/reject',    [WarehouseMaterialRequestController::class, 'reject']);
-
-//     // Purchase Invoices
-//     Route::apiResource('purchase-invoices', PurchaseInvoiceController::class)->only(['index', 'show', 'store']);
-
-//     // Inventory
-//     Route::prefix('inventory')->group(function () {
-//         Route::get('stock-levels', [InventoryController::class, 'stockLevels']);
-//         Route::get('stock-value',  [InventoryController::class, 'stockValue']);
-//         Route::get('by-category',  [InventoryController::class, 'byCategory']);
-//     });
-
-//     // Reports
-//     Route::prefix('reports')->group(function () {
-//         Route::get('stock-movement',    [ReportController::class, 'stockMovement']);
-//         Route::get('purchase-invoices', [ReportController::class, 'purchaseInvoices']);
-//         Route::get('material-requests', [ReportController::class, 'materialRequests']);
-//     });
-
-//     // Notifications
-//     Route::get('notifications',              [NotificationController::class, 'index']);
-//     Route::patch('notifications/{id}/read',  [NotificationController::class, 'markAsRead']);
-
-// });
+//33
 
 // ====================== LAB MANAGER ======================
 
@@ -293,4 +316,50 @@ Route::prefix('labManager')->middleware(['auth:sanctum', 'active'])->group(funct
     Route::patch('notifications/{id}/read',  [NotificationController::class, 'markAsRead']);
 
 });
+//38
+// add the reports and inventory
+// add the counts for each one
+
+
+// ====================== WAREHOUSE MANAGER ======================
+
+// Route::prefix('warehouseManager')->middleware(['auth:sanctum', 'active'])->group(function () {
+
+//     // Materials
+//     Route::apiResource('materials', MaterialController::class);
+
+//     // Stock
+//     Route::get('stock/logs',     [WarehouseStockController::class, 'logs']);
+//     Route::post('stock/{id}',    [WarehouseStockController::class, 'adjust']);
+//     Route::apiResource('stock',  WarehouseStockController::class)->only(['index', 'show']);
+
+//     // Material Requests
+//     Route::get('material-requests',                  [WarehouseMaterialRequestController::class, 'index']);
+//     Route::get('material-requests/{id}',             [WarehouseMaterialRequestController::class, 'show']);
+//     Route::patch('material-requests/{id}/fulfill',   [WarehouseMaterialRequestController::class, 'fulfill']);
+//     Route::patch('material-requests/{id}/reject',    [WarehouseMaterialRequestController::class, 'reject']);
+
+//     // Purchase Invoices
+//     Route::apiResource('purchase-invoices', PurchaseInvoiceController::class)->only(['index', 'show', 'store']);
+
+//     // Inventory
+//     Route::prefix('inventory')->group(function () {
+//         Route::get('stock-levels', [InventoryController::class, 'stockLevels']);
+//         Route::get('stock-value',  [InventoryController::class, 'stockValue']);
+//         Route::get('by-category',  [InventoryController::class, 'byCategory']);
+//     });
+
+//     // Reports
+//     Route::prefix('reports')->group(function () {
+//         Route::get('stock-movement',    [ReportController::class, 'stockMovement']);
+//         Route::get('purchase-invoices', [ReportController::class, 'purchaseInvoices']);
+//         Route::get('material-requests', [ReportController::class, 'materialRequests']);
+//     });
+
+//     // Notifications
+//     Route::get('notifications',              [NotificationController::class, 'index']);
+//     Route::patch('notifications/{id}/read',  [NotificationController::class, 'markAsRead']);
+
+// });
+
 

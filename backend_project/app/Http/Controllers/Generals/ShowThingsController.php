@@ -11,13 +11,15 @@ use App\Models\TreatmentType;
 use App\Models\Procedure;
 use App\Models\LabOrderType;
 use App\Models\LabOrderTypeCategory;
+use App\Models\CenterInfo;
+use App\Http\Resources\CenterInfoResource;
 use App\Enums\UserRole;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
+// use Illuminate\Http\Request;
+// use Illuminate\Support\Facades\Gate;
 
 class ShowThingsController extends Controller
 {
-    public function medications(Request $request)
+    public function medications( )
     {
 
 
@@ -32,7 +34,7 @@ class ShowThingsController extends Controller
         ]);
     }
 
-    public function specializations(Request $request)
+    public function specializations( )
     {
 
 
@@ -47,7 +49,7 @@ class ShowThingsController extends Controller
         ]);
     }
 
-    public function roles(Request $request)
+    public function roles( )
     {
         $roles = collect(UserRole::cases());
 
@@ -60,7 +62,7 @@ class ShowThingsController extends Controller
         ]);
     }
 
-    public function diseaseCategories(Request $request)
+    public function diseaseCategories( )
     {
         $categories = DiseaseCategory::orderBy('id')->get();
 
@@ -78,7 +80,7 @@ class ShowThingsController extends Controller
     // GET /appointmentTypes
     // Includes required specializations for each type
     // ---------------------------------------------------------------
-    public function appointmentTypes(Request $request)
+    public function appointmentTypes( )
     {
         $types = AppointmentType::with('specializations')->orderBy('id')->get();
 
@@ -99,7 +101,7 @@ class ShowThingsController extends Controller
     // ---------------------------------------------------------------
     // GET /treatmentTypes
     // ---------------------------------------------------------------
-    public function treatmentTypes(Request $request)
+    public function treatmentTypes( )
     {
         $types = TreatmentType::orderBy('id')->get();
 
@@ -116,7 +118,7 @@ class ShowThingsController extends Controller
     // ---------------------------------------------------------------
     // GET /procedures
     // ---------------------------------------------------------------
-    public function procedures(Request $request)
+    public function procedures( )
     {
 
         $procedures = Procedure::orderBy('id')->get();
@@ -135,7 +137,7 @@ class ShowThingsController extends Controller
     // ---------------------------------------------------------------
     // GET /labOrderTypeCategories
     // ---------------------------------------------------------------
-    public function labOrderTypeCategories(Request $request)
+    public function labOrderTypeCategories( )
     {
 
         $categories = LabOrderTypeCategory::orderBy('id')->get();
@@ -152,7 +154,7 @@ class ShowThingsController extends Controller
     // ---------------------------------------------------------------
     // GET /labOrderTypes
     // ---------------------------------------------------------------
-    public function labOrderTypes(Request $request)
+    public function labOrderTypes( )
     {
 
         $types = LabOrderType::with('category')
@@ -177,4 +179,23 @@ class ShowThingsController extends Controller
             ]),
         ]);
     }
+
+
+    public function centerInfo()
+    {
+        $info = CenterInfo::first();
+
+        if (!$info) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لم يتم إضافة معلومات المركز بعد.'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data'    => new CenterInfoResource($info),
+        ]);
+    }
+
 }

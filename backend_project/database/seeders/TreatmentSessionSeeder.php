@@ -42,6 +42,7 @@ class TreatmentSessionSeeder extends Seeder
 
                 // Appointment time matches the session's real-world day
                 $appointmentTime = $sessionAnchor->copy()->setTime(rand(9, 16), [0, 15, 30, 45][array_rand([0, 15, 30, 45])]);
+                $status = rand(0,1) ? 'completed' : 'pending'; // Randomly mark some sessions as completed or pending
 
                 $appointment = Appointment::create([
                     'patient_id'           => $patientId,
@@ -49,7 +50,7 @@ class TreatmentSessionSeeder extends Seeder
                     'appointment_type_id'  => $appointmentType?->id,
                     'treatment_id'         => $treatment->id,
                     'type'                 => 'continue_treatment',
-                    'status'               => 'completed',
+                    'status'               => $status,
                     'appointment_time'     => $appointmentTime,
                     'notes'                => 'موعد تم إنشاؤه تلقائياً لجلسة العلاج',
                 ]);

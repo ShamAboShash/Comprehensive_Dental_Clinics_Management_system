@@ -46,6 +46,7 @@ class DatabaseSeeder extends Seeder
             WarehouseStockSeeder::class,
             LabStockSeeder::class,
             DrugInteractionSeeder::class,
+            CenterInfoSeeder::class,
 
 
             ]);

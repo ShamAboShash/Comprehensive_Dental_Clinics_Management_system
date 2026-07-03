@@ -24,7 +24,7 @@ class AuthServiceProvider extends ServiceProvider
         // ================ Gates ================
 
         Gate::define('manage-employees', function (User $user) {
-            return $user->isAdmin();
+            return $user->isAdmin() || $user->isPatient();
         });
 
         Gate::define('view-employees', function (User $user) {
@@ -139,5 +139,8 @@ class AuthServiceProvider extends ServiceProvider
             return $user->isSecretary();
         });
 
+        Gate::define('is-patient', function ($user) {
+            return $user->isPatient();
+        });
      }
 }

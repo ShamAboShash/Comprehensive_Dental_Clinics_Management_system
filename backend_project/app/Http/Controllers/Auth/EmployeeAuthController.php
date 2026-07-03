@@ -158,10 +158,16 @@ public function setPassword(EmployeeSetPasswordRequest $request)
     $user->tokens()->delete();
     $token = $user->createToken('employee-auth-token')->plainTextToken;
 
+     $user->load('employee.dentist');
+    $dentistId  = $user->employee?->dentist?->id;
+    $employeeId = $user->employee?->id;
+
     return response()->json([
         'message' => 'Account activated successfully.',
         'user'    => [
             'id'    => $user->id,
+            'employee_id' => $employeeId,
+            'dentist_id'  => $dentistId,
             'name'  => $user->name,
             'email' => $user->email,
             'role'  => $user->role->value,
@@ -197,6 +203,10 @@ public function setPassword(EmployeeSetPasswordRequest $request)
         ], 403);
     }
 
+         $user->load('employee.dentist');
+        $dentistId  = $user->isDentist() ? $user->employee?->dentist?->id : null;
+        $employeeId = $user->employee?->id;
+
         $user->tokens()->delete();
 
         $token = $user->createToken('employee-auth-token', ['*'])->plainTextToken;
@@ -205,6 +215,8 @@ public function setPassword(EmployeeSetPasswordRequest $request)
             'message' => 'Login successful.',
             'user'    => [
                 'id'         => $user->id,
+                'employee_id' => $employeeId,
+                'dentist_id' => $dentistId,
                 'name'       => $user->name,
                 'email'      => $user->email,
                 'role'       => $user->role->value ,

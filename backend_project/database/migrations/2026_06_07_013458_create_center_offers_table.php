@@ -23,6 +23,7 @@ return new class extends Migration
     $table->date('start_date');
     $table->date('end_date');
     $table->text('conditions')->nullable();
+    $table->decimal('discount_percentage', 5, 2);
     $table->string('photo_path')->nullable();
     $table->boolean('is_active')->default(true);
 

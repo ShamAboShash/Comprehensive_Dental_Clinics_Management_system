@@ -10,6 +10,7 @@ use App\Http\Resources\Dentist\TreatmentResource;
 use App\Models\Appointment;
 use App\Models\Patient;
 use App\Models\Treatment;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -68,6 +69,35 @@ class TreatmentController extends Controller
     // GET /dentist/treatments/{treatment}
     // API #6 (detail) — Treatment with all its sessions
     // ---------------------------------------------------------------
+    // public function show(Request $request, Treatment $treatment): JsonResponse
+    // {
+    //     Gate::authorize('is-dentist');
+
+    //     $dentistId = $this->getDentistId($request);
+    //     $patient   = $treatment->patient;
+
+    //     if (!$this->hasPatientAccess($dentistId, $patient)) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'ليس لديك صلاحية الوصول إلى هذا العلاج.',
+    //         ], 403);
+    //     }
+
+    //     $treatment->load([
+    //         'treatmentType',
+    //         'dentist.employee.user',
+    //         'patient.user',
+    //         'sessions.dentist.employee.user',
+    //         'sessions.toothTreatments.procedure',
+
+    //     ]);
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'data'    => new TreatmentDetailResource($treatment),
+    //     ]);
+    // }
+
     public function show(Request $request, Treatment $treatment): JsonResponse
     {
         Gate::authorize('is-dentist');
@@ -88,14 +118,36 @@ class TreatmentController extends Controller
             'patient.user',
             'sessions.dentist.employee.user',
             'sessions.toothTreatments.procedure',
-
         ]);
+
+        // Today's approved appointments for this dentist
+        // that belong to this patient and are not yet linked to a session
+        $todayAppointments = Appointment::where('dentist_id', $dentistId)
+            ->where('patient_id', $treatment->patient_id)
+            ->where('status', 'approved')
+            ->whereDate('appointment_time', Carbon::today())
+            ->whereNotIn('id', function ($query) {
+                $query->select('appointment_id')
+                    ->from('treatment_sessions')
+                    ->whereNotNull('appointment_id');
+            })
+            ->get(['id', 'appointment_time', 'type']);
 
         return response()->json([
             'success' => true,
-            'data'    => new TreatmentDetailResource($treatment),
+            'data'    => array_merge(
+                (new TreatmentDetailResource($treatment))->toArray($request),
+                [
+                    'available_appointments_today' => $todayAppointments->map(fn($a) => [
+                        'id'               => $a->id,
+                        'appointment_time' => $a->appointment_time->toDateTimeString(),
+                        'type'             => $a->type,
+                    ]),
+                ]
+            ),
         ]);
     }
+
 
     // ---------------------------------------------------------------
     // POST /dentist/patients/{patient}/treatments
