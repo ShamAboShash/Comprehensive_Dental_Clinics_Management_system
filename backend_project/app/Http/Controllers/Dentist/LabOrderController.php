@@ -36,7 +36,7 @@ class LabOrderController extends Controller
 
         $dentistId = $this->getDentistId($request);
 
-        $orders = LabOrder::with(['patient.user', 'technician.user', 'items'])
+        $orders = LabOrder::with(['patient.user', 'technician.user', 'items.labOrderType', 'modifications'])
             ->where('dentist_id', $dentistId)
             ->orderBy('created_at', 'desc')
             ->get();

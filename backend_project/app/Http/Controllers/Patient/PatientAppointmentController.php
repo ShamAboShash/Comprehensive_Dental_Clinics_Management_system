@@ -9,6 +9,7 @@ use App\Models\Appointment;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use App\Http\Requests\Patient\StoreAppointmentRequest;
 use App\Models\Treatment;
 use Illuminate\Support\Facades\DB;
@@ -18,16 +19,9 @@ class PatientAppointmentController extends Controller
     private const ACTIVE_STATUSES  = ['pending', 'pending_secretary', 'approved'];
     private const HISTORY_STATUSES = ['completed', 'cancelled', 'rejected', 'patient_no_show'];
 
-    private function ensurePatient(Request $request): JsonResponse|null
+    public function __construct()
     {
-        $user = $request->user();
-        if (!$user || !$user->isPatient()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'غير مصرح لك بالوصول. هذا الإجراء مخصص للمرضى فقط.'
-            ], 403);
-        }
-        return null;
+        Gate::authorize('is-patient');
     }
 
     /**
@@ -35,7 +29,6 @@ class PatientAppointmentController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        if ($denied = $this->ensurePatient($request)) return $denied;
 
         $patientId = $request->user()->patient->id;
 
@@ -57,7 +50,6 @@ class PatientAppointmentController extends Controller
      */
     public function previous(Request $request): JsonResponse
     {
-        if ($denied = $this->ensurePatient($request)) return $denied;
 
         $patientId = $request->user()->patient->id;
 
@@ -79,7 +71,6 @@ class PatientAppointmentController extends Controller
      */
     public function show(Request $request, int $id): JsonResponse
     {
-        if ($denied = $this->ensurePatient($request)) return $denied;
 
         $patientId = $request->user()->patient->id;
 
@@ -105,7 +96,6 @@ class PatientAppointmentController extends Controller
      */
     public function update(UpdateAppointmentRequest $request, int $id): JsonResponse
     {
-        if ($denied = $this->ensurePatient($request)) return $denied;
 
         $patientId = $request->user()->patient->id;
 
@@ -160,7 +150,6 @@ class PatientAppointmentController extends Controller
      */
     public function cancel(Request $request, int $id): JsonResponse
     {
-        if ($denied = $this->ensurePatient($request)) return $denied;
 
         $patientId = $request->user()->patient->id;
 

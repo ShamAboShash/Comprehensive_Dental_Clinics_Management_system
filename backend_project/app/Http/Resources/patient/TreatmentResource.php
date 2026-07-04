@@ -4,6 +4,7 @@ namespace App\Http\Resources\patient;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\dentist\SessionResource;
 
 class TreatmentResource extends JsonResource
 {
@@ -11,16 +12,22 @@ class TreatmentResource extends JsonResource
     {
         return [
             'id'                    => $this->id,
-            'dentist_name'          => $this->dentist->employee->user->name ?? 'طبيب غير معروف',
-            'treatment_type'        => $this->treatmentType ? [
-                'ar' => $this->treatmentType->name,
-                'en' => $this->treatmentType->name_en,
-            ] : null,
+            'treatment_type'        => $this->whenLoaded('treatmentType', fn() => [
+                'id'      => $this->treatmentType->id,
+                'name'    => $this->treatmentType->name,
+                'name_en' => $this->treatmentType->name_en,
+            ]),
+            'dentist'               => $this->whenLoaded('dentist', fn() => [
+                'id'   => $this->dentist->id,
+                'name' => $this->dentist->employee->user->name,
+            ]),
+            'status'                => $this->status,
             'total_sessions_needed' => $this->total_sessions_needed,
             'sessions_completed'    => $this->sessions_completed,
-            'status'                => $this->status,
             'notes'                 => $this->notes,
-            'created_at'            => $this->created_at?->toDateTimeString(),
-        ];
+            'created_at'            => $this->created_at->toDateString(),
+            'sessions'              => SessionResource::collection($this->whenLoaded('sessions')),
+
+            ];
     }
 }

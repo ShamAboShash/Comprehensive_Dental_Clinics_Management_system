@@ -134,23 +134,18 @@ Route::prefix('patient')->group(function () {
 
     // Dentists
     Route::get('showDentistsBySpecialization/{specialization_id}', [PatientDentistController::class, 'index']);
-
     Route::get('showDentistSchedule/{dentist}/', [DentistScheduleController::class, 'availableSlots']);
     Route::post('addDentistRate/{dentistId}', [PatientDentistRatingController::class, 'rate']);
     Route::get('showDentistRate/{dentistId}', [PatientDentistRatingController::class, 'myRating']);
     Route::get('showDentistDetails/{dentist}', [PatientDentistController::class, 'show']);
 
-    // Lookups
-    Route::get('center-info', [PatientLookupController::class, 'centerInfo']);
-
     // Treatments
-    Route::get('treatments', [PatientTreatmentController::class, 'index']);
-    Route::get('treatments/{treatmentId}/invoice', [PatientInvoiceController::class, 'show']);
-    Route::get('treatments/{id}', [PatientTreatmentController::class, 'show']);
+    Route::get('showAllTreatments', [PatientTreatmentController::class, 'index']);
+    Route::get('showTreatmentdetails/{id}', [PatientTreatmentController::class, 'show']);
 
     // Prescriptions
-    Route::get('prescriptions', [PatientPrescriptionController::class, 'index']);
-    Route::get('prescriptions/{id}', [PatientPrescriptionController::class, 'show']);
+    Route::get('showAllPrescriptions', [PatientPrescriptionController::class, 'index']);
+    Route::get('showPrescriptionDetails/{id}', [PatientPrescriptionController::class, 'show']);
 
     // Treatment photos
     Route::get('treatment-photos', [PatientTreatmentPhotoController::class, 'index']);
@@ -161,6 +156,8 @@ Route::prefix('patient')->group(function () {
 
     // Invoices
     Route::get('invoices/summary', [PatientInvoiceController::class, 'summary']);
+        Route::get('treatments/{treatmentId}/invoice', [PatientInvoiceController::class, 'show']);
+
 
     // Offers
     Route::get('offers', [PatientOfferController::class, 'index']);

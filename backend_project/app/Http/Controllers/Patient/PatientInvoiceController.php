@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Patient;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\InvoiceResource;
+use App\Http\Resources\patient\InvoiceResource;
 use App\Models\Invoice;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

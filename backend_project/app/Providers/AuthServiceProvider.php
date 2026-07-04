@@ -142,5 +142,9 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('is-patient', function ($user) {
             return $user->isPatient();
         });
+
+        Gate::define('is-dentist-is-patient', function ($user) {
+            return $user->isDentist() || $user->isPatient();
+        });
      }
 }

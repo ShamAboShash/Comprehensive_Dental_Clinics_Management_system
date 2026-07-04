@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Patient;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\PrescriptionResource;
+use App\Http\Resources\patient\PrescriptionResource;
 use App\Models\Prescription;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +17,7 @@ class PatientPrescriptionController extends Controller
     {
         $patientId = $request->user()->patient->id;
 
-        $prescriptions = Prescription::with(['dentist.employee.user', 'medications.medication'])
+        $prescriptions = Prescription::with(['dentist.employee.user'])
             ->where('patient_id', $patientId)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -36,7 +36,7 @@ class PatientPrescriptionController extends Controller
     {
         $patientId = $request->user()->patient->id;
 
-        $prescription = Prescription::with(['dentist.employee.user', 'medications.medication'])
+        $prescription = Prescription::with(['dentist.employee.user', 'medications'])
             ->where('patient_id', $patientId)
             ->find($id);
 

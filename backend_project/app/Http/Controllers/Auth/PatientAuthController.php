@@ -145,7 +145,6 @@ class PatientAuthController extends Controller
 
     public function sendVerification(Request $request)
 {
-    // Fetch the user first
     $user = User::where('email', $request->email)->first();
 
     if (!$user) {
@@ -171,20 +170,17 @@ class PatientAuthController extends Controller
         ], 429);
     }
 
-    // Generate code
     $code = rand(100000, 999999);
 
-    // Save / Update verification code
     VerificationCode::updateOrCreate(
         ['email' => $user->email],
         [
             'code'       => $code,
-            'expires_at' => now()->addMinutes(5),   // Better to give more time
+            'expires_at' => now()->addMinutes(5),
             'attempts'   => $newAttempts,
         ]
     );
 
-    // Send email - Pass the $user object, not string
     Mail::to($user->email)->send(new VerificationMail($user, $code));
 
     return response()->json([
@@ -225,6 +221,7 @@ class PatientAuthController extends Controller
         'message' => 'you registered successfully.',
         'user'    => [
             'id'    => $user->id,
+            'patient_id' => $user->patient ? $user->patient->id : null,
             'name'  => $user->name,
             'email' => $user->email,
             'role'  => $user->role->value,
@@ -245,7 +242,7 @@ class PatientAuthController extends Controller
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
-       
+
 
         $user->tokens()->delete();
 
@@ -255,6 +252,7 @@ class PatientAuthController extends Controller
             'message' => 'Login successful',
             'user'    => [
                 'id'    => $user->id,
+                'patient_id' => $user->patient ? $user->patient->id : null,
                 'name'  => $user->name,
                 'email' => $user->email,
                 'role'  => $user->role->value,
@@ -282,115 +280,5 @@ public function logout(Request $request)
         ]);
 
 }
-    // public function logout(Request $request)
-    // {
-    //     $request->user()->currentAccessToken()->delete();
-
-    //     return response()->json([
-    //         'message' => 'Logged out successfully'
-    //     ]);
-    // }
-
-
-
-/**
- * Step 2: Set Password (Requires Authentication Token)
- */
-// public function setPassword(PatientSetPasswordRequest $request)
-// {
-//     $user = User::where('email', $request->email)->first();
-
-//     // if ($user->password !== null) {
-//     //     return response()->json([
-//     //         'message' => 'Password is already set for this account.'
-//     //     ], 422);
-//     // }
-
-//     $user->update([
-//         'password' => Hash::make($request->password),
-//     ]);
-
-//     // Optional: Regenerate token after password set
-//     $user->tokens()->delete(); // revoke old tokens
-//     $newToken = $user->createToken('patient-auth-token')->plainTextToken;
-
-//     return response()->json([
-//         'message' => 'Password set successfully.',
-//         'user'    => [
-//             'id'    => $user->id,
-//             'name'  => $user->name,
-//             'email' => $user->email,
-//             'role'  => $user->role->label() ?? 'patient',
-//         ],
-//         'token'       => $newToken,
-//         'token_type'  => 'Bearer',
-//     ]);
-// }
-
-
-    //     public function verifyEmail(PatientActivateRequest $request)
-    // {
-    //     $user = User::where('email', $request->email)->first();
-
-    //     if (!$user) {
-    //         return response()->json([
-    //             'message' => 'No account found with this email.'
-    //         ], 404);
-    //     }
-
-    //     if ($user->is_active) {
-    //         return response()->json([
-    //             'message' => 'This account is already verified and active.'
-    //         ], 422);
-    //     }
-
-    //     // Find valid verification code
-    //     $verification = VerificationCode::where('email', $user->email)
-    //         ->where('code', $request->verification_code)
-    //         ->where('expires_at', '>', now())
-    //         ->first();
-
-    //     if (!$verification) {
-    //         return response()->json([
-    //             'message' => 'Invalid or expired verification code.'
-    //         ], 422);
-    //     }
-
-    //     // Activate the patient account
-    //     $user->update([
-    //         'is_active'         => true,
-    //         'email_verified_at' => now(),
-    //     ]);
-
-    //     // Delete used verification code
-    //     VerificationCode::where('email', $user->email)->delete();
-
-    //     // ====================== LOGIN WITH SANCTUM TOKEN ======================
-    //     $token = $user->createToken('patient-auth-token')->plainTextToken;
-
-    //     return response()->json([
-    //         'message' => 'Email verified successfully. Your account is now active.',
-    //         'user'    => [
-    //             'id'                => $user->id,
-    //             'name'              => $user->name,
-    //             'email'             => $user->email,
-    //             'phone'             => $user->phone,
-    //             'role'              => $user->role->label() ?? 'patient',
-
-    //         ],
-    //         'token'       => $token,
-    //         'token_type'  => 'Bearer',
-    //         'expires_in'  => 30 . ' days',
-    //     ]);
-    // }
-
-
-
-
-
-
-
-
-
 
 }

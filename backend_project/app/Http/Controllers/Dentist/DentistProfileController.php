@@ -53,67 +53,67 @@ class DentistProfileController extends Controller
     }
 
 
-    public function addMedicalInfo(AddMedicalInfoRequest  $request, $patientId)
-    {
+//     public function addMedicalInfo(AddMedicalInfoRequest  $request, $patientId)
+//     {
 
-        $user = $request->user();
+//         $user = $request->user();
 
-        if (!Gate::allows('add-medical-info')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'غير مصرح لك بالوصول، هذا الحساب ليس لطبيب أسنان.'
-            ], 403);
-        }
+//         if (!Gate::allows('add-medical-info')) {
+//             return response()->json([
+//                 'success' => false,
+//                 'message' => 'غير مصرح لك بالوصول، هذا الحساب ليس لطبيب أسنان.'
+//             ], 403);
+//         }
 
-        $patient = Patient::find($patientId);
-        if (!$patient) {
-            return response()->json(['success' => false, 'message' => 'المريض غير موجود'], 404);
-        }
+//         $patient = Patient::find($patientId);
+//         if (!$patient) {
+//             return response()->json(['success' => false, 'message' => 'المريض غير موجود'], 404);
+//         }
 
-        if ($request->has('allergies')) {
-            foreach ($request->allergies as $name) {
-                $patient->allergies()->firstOrCreate(['allergy_name' => $name]);
-            }
-        }
+//         if ($request->has('allergies')) {
+//             foreach ($request->allergies as $name) {
+//                 $patient->allergies()->firstOrCreate(['allergy_name' => $name]);
+//             }
+//         }
 
-        if ($request->has('chronic_diseases')) {
-            foreach ($request->chronic_diseases as $disease) {
-                $patient->chronicDiseases()->create($disease);
-            }
-        }
+//         if ($request->has('chronic_diseases')) {
+//             foreach ($request->chronic_diseases as $disease) {
+//                 $patient->chronicDiseases()->create($disease);
+//             }
+//         }
 
-        if ($request->has('medications')) {
-            foreach ($request->medications as $med) {
-                $patient->medications()->create($med);
-            }
-        }
-//ask if the frontend want this response or not
-        $patient->load(['allergies', 'chronicDiseases.category', 'medications']);
+//         if ($request->has('medications')) {
+//             foreach ($request->medications as $med) {
+//                 $patient->medications()->create($med);
+//             }
+//         }
+// //ask if the frontend want this response or not
+//         $patient->load(['allergies', 'chronicDiseases.category', 'medications']);
 
-        return response()->json([
-        'success' => true,
-        'message' => 'تم تحديث السجل الطبي للمريض بنجاح.',
-        'data'    => [
-            'patient_id'      => $patient->id,
-            'allergies'       => $patient->allergies->map(fn($a) => [
-                'id'          => $a->id,
-                'name'        => $a->allergy_name,
-            ]),
-            'chronic_diseases' => $patient->chronicDiseases->map(fn($d) => [
-                'id'           => $d->id,
-                'category'     => $d->category->name,
-                'problem_name' => $d->problem_name,
-                'severity'     => $d->severity,
-            ]),
-            'medications'       => $patient->medications->map(fn($m) => [
-                'id'            => $m->id,
-                'medication_name' => $m->name,
-                'dosage'        => $m->dosage,
-                'frequency'     => $m->frequency,
-            ]),
-        ],
-    ], 200);
-    }
+//         return response()->json([
+//         'success' => true,
+//         'message' => 'تم تحديث السجل الطبي للمريض بنجاح.',
+//         'data'    => [
+//             'patient_id'      => $patient->id,
+//             'allergies'       => $patient->allergies->map(fn($a) => [
+//                 'id'          => $a->id,
+//                 'name'        => $a->allergy_name,
+//             ]),
+//             'chronic_diseases' => $patient->chronicDiseases->map(fn($d) => [
+//                 'id'           => $d->id,
+//                 'category'     => $d->category->name,
+//                 'problem_name' => $d->problem_name,
+//                 'severity'     => $d->severity,
+//             ]),
+//             'medications'       => $patient->medications->map(fn($m) => [
+//                 'id'            => $m->id,
+//                 'medication_name' => $m->name,
+//                 'dosage'        => $m->dosage,
+//                 'frequency'     => $m->frequency,
+//             ]),
+//         ],
+//     ], 200);
+//     }
 
 
 public function editProfile(UpdateDentistProfileRequest $request)

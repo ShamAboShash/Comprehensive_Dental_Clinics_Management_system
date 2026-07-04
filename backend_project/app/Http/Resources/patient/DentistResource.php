@@ -13,9 +13,7 @@ class DentistResource extends JsonResource
         return [
             'id'                 => $this->id,
             'name'               => $this->employee->user->name ?? null,
-            'profile_picture'    => $this->employee->user->profile_picture
-                ? Storage::url($this->employee->user->profile_picture)
-                : null,
+            'profile_picture'    => $this->employee->user->profile_picture_url,
             'specialization'     => $this->specialization ? [
                 'ar' => $this->specialization->name,
                 'en' => $this->specialization->name_en,

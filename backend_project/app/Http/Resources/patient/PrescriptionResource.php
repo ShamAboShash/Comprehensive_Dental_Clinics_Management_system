@@ -14,12 +14,12 @@ class PrescriptionResource extends JsonResource
             'dentist_name' => $this->dentist->employee->user->name ?? 'طبيب غير معروف',
             'notes'        => $this->notes,
             'created_at'   => $this->created_at?->toDateTimeString(),
-            'medications'  => $this->medications->map(fn ($m) => [
-                'name'      => $m->medication->name ?? null,
-                'dosage'    => $m->dosage,
-                'frequency' => $m->frequency,
-                'duration'  => $m->duration,
-                'notes'     => $m->notes,
+            'medications'  => $this->medications->map(fn ($medication) => [
+                'name'      => $medication->scientific_name,
+                'dosage'    => $medication->pivot->dosage,
+                'frequency' => $medication->pivot->frequency,
+                'duration'  => $medication->pivot->duration,
+                'notes'     => $medication->pivot->notes,
             ]),
         ];
     }
