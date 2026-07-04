@@ -148,7 +148,7 @@ Route::prefix('patient')->group(function () {
     Route::get('showPrescriptionDetails/{id}', [PatientPrescriptionController::class, 'show']);
 
     // Treatment photos
-    Route::get('treatment-photos', [PatientTreatmentPhotoController::class, 'index']);
+    Route::get('showAllTreatmentPhotos', [PatientTreatmentPhotoController::class, 'index']);
 
     // Complaints
     Route::get('complaints', [PatientComplaintController::class, 'index']);

@@ -15,7 +15,8 @@ class DentistsResource extends JsonResource
     public function toArray(Request $request): array
     {
          return [
-            'id'              => $this->employee->id,
+            'id'              => $this->employee->dentist->id,
+            'employee_id'     => $this->employee->id,
             'user_id'         =>$this->id,
             'name'            => $this->name,
             'email'           => $this->email,
