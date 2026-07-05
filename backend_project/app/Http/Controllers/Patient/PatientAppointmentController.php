@@ -32,7 +32,7 @@ class PatientAppointmentController extends Controller
 
         $patientId = $request->user()->patient->id;
 
-        $appointments = Appointment::with(['dentist.employee.user', 'appointmentType'])
+        $appointments = Appointment::with(['dentist.employee.user', 'appointmentType','treatment.treatmentType'])
             ->where('patient_id', $patientId)
             ->whereIn('status', self::ACTIVE_STATUSES)
             ->orderBy('appointment_time', 'asc')
