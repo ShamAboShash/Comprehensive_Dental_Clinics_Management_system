@@ -4,7 +4,7 @@ namespace App\Http\Resources\patient;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\dentist\SessionResource;
+use App\Http\Resources\dentist\SessionDetailResource;
 
 class TreatmentResource extends JsonResource
 {
@@ -26,7 +26,7 @@ class TreatmentResource extends JsonResource
             'sessions_completed'    => $this->sessions_completed,
             'notes'                 => $this->notes,
             'created_at'            => $this->created_at->toDateString(),
-            'sessions'              => SessionResource::collection($this->whenLoaded('sessions')),
+            'sessions'              => SessionDetailResource::collection($this->whenLoaded('sessions')),
 
             ];
     }

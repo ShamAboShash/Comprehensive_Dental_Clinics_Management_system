@@ -71,6 +71,7 @@ class PatientChronicDiseaseResource extends JsonResource
         return [
             'id'           => $this->id,
             'category'     => $this->category?->name,
+            'category_en'  => $this->category?->name_en,
             'problem_name' => $this->problem_name,
             'details'      => $this->details,
             'severity'     => $this->severity,

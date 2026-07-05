@@ -31,4 +31,12 @@ class TreatmentPhoto extends Model
     {
         return asset('storage/' . $this->photo_path);
     }
+
+      public function getProfilePictureUrlAttribute()
+    {
+        if ($this->profile_picture) {
+            return asset('storage/' . $this->profile_picture);
+        }
+        return asset('default-avatar.png');
+    }
 }

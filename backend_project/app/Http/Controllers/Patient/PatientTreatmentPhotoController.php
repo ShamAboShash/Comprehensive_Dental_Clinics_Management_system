@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Patient;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\TreatmentPhotoResource;
+use App\Http\Resources\Dentist\TreatmentPhotoResource;
 use App\Models\TreatmentPhoto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

@@ -11,7 +11,9 @@ class TreatmentPhotoResource extends JsonResource
     {
         return [
             'id'          => $this->id,
-            'url'         => Storage::url($this->photo_path),
+            'url'  =>$this->getPhotoUrlAttribute(),
+            'session_id'  => $this->session_id,
+            'session'     => $this->whenLoaded('session'),
             'photo_type'  => $this->photo_type,
             'description' => $this->description,
             'created_at'  => $this->created_at->toDateTimeString(),

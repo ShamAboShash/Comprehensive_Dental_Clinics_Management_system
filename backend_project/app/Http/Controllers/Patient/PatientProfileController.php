@@ -40,7 +40,7 @@ class PatientProfileController extends Controller
             'user',
             'allergies',
             'chronicDiseases.category',
-            'medications.medication'
+            'medications'
         ])->where('user_id', $user->id)->first();
 
         // 5. التحقق من وجود سجل للمريض في جدول patients
@@ -113,7 +113,7 @@ class PatientProfileController extends Controller
         'success' => true,
         'message' => 'تم تحديث الملف الشخصي بنجاح.',
         'data'    => new PatientProfileResource(
-            $user->patient->load(['user', 'allergies', 'chronicDiseases', 'medications.medication'])
+            $user->patient->load(['user', 'allergies', 'chronicDiseases', 'medications'])
         ),
     ]);
 }

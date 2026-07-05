@@ -24,7 +24,7 @@ class PatientTreatmentController extends Controller
     {
         $patientId = $request->user()->patient->id;
 
-        $treatments = Treatment::with(['dentist.employee.user', 'treatmentType'])
+        $treatments = Treatment::with(['dentist.employee.user', 'treatmentType','sessions.toothTreatments.procedure'])
             ->where('patient_id', $patientId)
             ->orderBy('created_at', 'desc')
             ->get();

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Patient;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Patient\StoreComplaintRequest;
-use App\Http\Resources\ComplaintResource;
+use App\Http\Resources\patient\ComplaintResource;
 use App\Models\Complaint;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -48,6 +48,7 @@ class PatientComplaintController extends Controller
             'title'         => $request->title,
             'description'   => $request->description,
             'phone_number'  => $request->phone_number,
+            'status'         => 'pending',
             'priority'      => $request->priority ?? 'medium',
         ]);
 

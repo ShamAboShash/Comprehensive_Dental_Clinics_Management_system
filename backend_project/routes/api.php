@@ -151,8 +151,8 @@ Route::prefix('patient')->group(function () {
     Route::get('showAllTreatmentPhotos', [PatientTreatmentPhotoController::class, 'index']);
 
     // Complaints
-    Route::get('complaints', [PatientComplaintController::class, 'index']);
-    Route::post('complaints', [PatientComplaintController::class, 'store']);
+    Route::get('showAllComplaints', [PatientComplaintController::class, 'index']);
+    Route::post('addComplaint', [PatientComplaintController::class, 'store']);
 
     // Invoices
     Route::get('invoices/summary', [PatientInvoiceController::class, 'summary']);
