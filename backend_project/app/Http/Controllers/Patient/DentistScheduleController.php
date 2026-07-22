@@ -14,14 +14,14 @@ class DentistScheduleController extends Controller
     private const SLOT_MINUTES = 30;
     private const DAYS_AHEAD   = 14;
 
-    private const CARBON_DOW_TO_ENUM = [
-        0 => 'sun',
-        1 => 'mon',
-        2 => 'tue',
-        3 => 'wed',
-        4 => 'thu',
-        5 => 'fri',
-        6 => 'sat',
+ private const CARBON_DOW_TO_ENUM = [
+        0 => 'sunday',
+        1 => 'monday',
+        2 => 'tuesday',
+        3 => 'wednesday',
+        4 => 'thursday',
+        5 => 'friday',
+        6 => 'saturday',
     ];
 
     /**

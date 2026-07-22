@@ -87,6 +87,7 @@ Route::get('/treatmentTypes',           [ShowThingsController::class, 'treatment
 Route::get('/procedures',               [ShowThingsController::class, 'procedures']);
 Route::get('/labOrderTypeCategories',   [ShowThingsController::class, 'labOrderTypeCategories']);
 Route::get('/labOrderTypes',            [ShowThingsController::class, 'labOrderTypes']);
+Route::get('/centerInfo',                [ShowThingsController::class, 'centerInfo']);
 
 //15
 // ====================== EMPLOYEE ======================

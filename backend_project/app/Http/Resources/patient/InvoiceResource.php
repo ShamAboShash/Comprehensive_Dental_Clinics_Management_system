@@ -21,9 +21,11 @@ class InvoiceResource extends JsonResource
             'total_amount'  => (float) $this->total_amount,
             'paid_amount'   => (float) $this->paid_amount,
             'remaining_amount' => (float) ($this->total_amount - $this->paid_amount),
-            'items'         => $this->items->map(fn ($item) => [
-                'description' => $item->description,
-                'unit_price'  => (float) $item->unit_price,
+            'items' => $this->items->map(fn ($item) => [
+                'description'          => $item->description,
+                'unit_price'           => (float) $item->unit_price,
+                'discount_percentage'  => (float) $item->discount_percentage,
+                'final_price'          => $item->finalPrice(),
             ]),
             'payments'      => $this->payments->map(fn ($payment) => [
                 'amount'         => (float) $payment->amount,

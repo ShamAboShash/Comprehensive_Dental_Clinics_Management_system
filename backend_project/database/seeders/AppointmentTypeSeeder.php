@@ -14,32 +14,32 @@ class AppointmentTypeSeeder extends Seeder
             [
                 'name'    => 'استشارة',
                 'name_en' => 'Consultation',
-                'specializations' => ['عام'], // general dentist
+                'specializations' => ['عام'],
             ],
             [
                 'name'    => 'تقويم أسنان',
                 'name_en' => 'Orthodontics',
-                'specializations' => ['تقويم الأسنان'],
+                'specializations' => ['تقويم أسنان'],
             ],
             [
                 'name'    => 'تسوس أسنان',
                 'name_en' => 'Dental Caries',
-                'specializations' => ['عام', 'طب أسنان الأطفال'],
+                'specializations' => ['عام', 'طب أسنان أطفال'],
             ],
             [
                 'name'    => 'جراحة أسنان',
                 'name_en' => 'Dental Surgery',
-                'specializations' => ['جراحة الفم والأسنان'],
+                'specializations' => ['جراحة فم وأسنان'],
             ],
             [
                 'name'    => 'تبييض أسنان',
                 'name_en' => 'Teeth Whitening',
-                'specializations' => ['عام'],
+                'specializations' => ['عام', 'تجميل أسنان'],
             ],
             [
                 'name'    => 'زراعة أسنان',
                 'name_en' => 'Dental Implants',
-                'specializations' => ['زراعة الأسنان', 'جراحة الفم والأسنان'],
+                'specializations' => ['زراعة أسنان', 'جراحة فم وأسنان'],
             ],
         ];
 
@@ -49,9 +49,12 @@ class AppointmentTypeSeeder extends Seeder
                 'name_en' => $typeData['name_en'],
             ]);
 
-            // link to specializations by name
             $specializationIds = Specialization::whereIn('name', $typeData['specializations'])
                 ->pluck('id');
+
+            if ($specializationIds->isEmpty()) {
+                $this->command->warn("لم يتم العثور على اختصاصات لنوع الموعد: {$typeData['name']}");
+            }
 
             $type->specializations()->attach($specializationIds);
         }

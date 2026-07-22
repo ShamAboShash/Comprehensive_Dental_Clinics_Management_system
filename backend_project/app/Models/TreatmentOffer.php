@@ -17,6 +17,6 @@ class TreatmentOffer extends Model
 
     public function offer()
     {
-        return $this->belongsTo(CenterOffer::class);
+        return $this->belongsTo(CenterOffer::class, 'offer_id');
     }
 }

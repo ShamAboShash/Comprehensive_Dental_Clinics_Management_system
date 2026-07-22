@@ -29,11 +29,6 @@ return new class extends Migration
                 ->constrained('treatments')
                 ->onDelete('set null');
 
-            // $table->foreignId('created_by')
-            //     ->constrained('users')
-            //     ->onDelete('cascade');
-
-
             $table->enum('type', [
                 'emergency',
                 'new_treatment',
@@ -52,6 +47,7 @@ return new class extends Migration
             ])->default('pending');
 
             $table->dateTime('appointment_time')->nullable();
+            $table->string('slot_lock')->nullable()->unique();
             $table->string('rejection_reason')->nullable();
             $table->text('notes')->nullable();
             $table->tinyInteger('reschedule_count')->default(0);

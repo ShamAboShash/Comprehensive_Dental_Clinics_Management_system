@@ -15,6 +15,8 @@ class Appointment extends Model
         'type',
         'status',
         'appointment_time',
+        'slot_lock',
+        'reschedule_count',
         'rejection_reason',
         'notes',
     ];

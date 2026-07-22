@@ -132,6 +132,7 @@ class SessionController extends Controller
         }
 
         if ($session->status === 'completed') {
+            \App\Models\Invoice::syncFromSession($session);
             $treatment->increment('sessions_completed');
             $treatment->refresh();
             if ($treatment->sessions_completed >= $treatment->total_sessions_needed) {
@@ -190,6 +191,10 @@ class SessionController extends Controller
                 $treatment->increment('sessions_completed');
             } elseif ($session->status === 'missed' && $oldStatus === 'completed') {
                 $treatment->decrement('sessions_completed');
+            }
+
+            if ($session->status === 'completed' && $oldStatus !== 'completed') {
+                \App\Models\Invoice::syncFromSession($session);
             }
 
             // Re-check if treatment should be marked completed

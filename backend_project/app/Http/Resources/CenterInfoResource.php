@@ -13,6 +13,7 @@ class CenterInfoResource extends JsonResource
         return [
             'name'             => $this->name,
             'description'      => $this->description,
+            'address'          => $this->address,
             'phone'            => $this->phone,
             'email'            => $this->email,
             'logo_url'         => $this->logo_path ? Storage::url($this->logo_path) : null,

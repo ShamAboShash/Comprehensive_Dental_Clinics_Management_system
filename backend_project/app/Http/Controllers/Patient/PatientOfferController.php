@@ -40,8 +40,11 @@ class PatientOfferController extends Controller
         ]);
     }
 
+    <?php
+
     /**
-     * تطبيق عرض على علاج محدد
+     * تطبيق عرض على علاج محدد — يبدأ الخصم من الآن حتى نهاية العرض
+     * الجلسات السابقة تبقى بسعرها الأصلي، ولا تأثير رجعي على الفاتورة
      */
     public function apply(Request $request, int $offerId): JsonResponse
     {
@@ -59,10 +62,7 @@ class PatientOfferController extends Controller
             ->first();
 
         if (!$offer) {
-            return response()->json([
-                'success' => false,
-                'message' => 'هذا العرض غير متاح حالياً.'
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'هذا العرض غير متاح حالياً.'], 404);
         }
 
         $treatment = Treatment::where('id', $request->treatment_id)
@@ -70,52 +70,100 @@ class PatientOfferController extends Controller
             ->first();
 
         if (!$treatment) {
-            return response()->json([
-                'success' => false,
-                'message' => 'العلاج غير موجود.'
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'العلاج غير موجود.'], 404);
         }
 
         if (TreatmentOffer::where('treatment_id', $treatment->id)->exists()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'تم استخدام عرض على هذا العلاج مسبقاً.'
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'تم استخدام عرض على هذا العلاج مسبقاً.'], 422);
         }
 
         try {
-            DB::transaction(function () use ($offer, $treatment) {
-                TreatmentOffer::create([
-                    'treatment_id'        => $treatment->id,
-                    'offer_id'            => $offer->id,
-                    'discount_percentage' => $offer->discount_percentage,
-                    'applied_at'          => now(),
-                ]);
-
-                $invoice = Invoice::where('treatment_id', $treatment->id)->first();
-                if ($invoice) {
-                    $itemsSum = $invoice->items()->sum('unit_price');
-                    $newTotal = round($itemsSum - ($itemsSum * $offer->discount_percentage / 100), 2);
-
-                    $status = match (true) {
-                        $invoice->paid_amount >= $newTotal && $newTotal > 0 => 'paid',
-                        $invoice->paid_amount > 0                           => 'partial',
-                        default                                             => 'unpaid',
-                    };
-
-                    $invoice->update(['total_amount' => $newTotal, 'status' => $status]);
-                }
-            });
+            TreatmentOffer::create([
+                'treatment_id'        => $treatment->id,
+                'offer_id'            => $offer->id,
+                'discount_percentage' => $offer->discount_percentage,
+                'applied_at'          => now(),
+            ]);
         } catch (\Illuminate\Database\QueryException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'تم استخدام عرض على هذا العلاج مسبقاً.'
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'تم استخدام عرض على هذا العلاج مسبقاً.'], 422);
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'تم تطبيق العرض بنجاح.'
+            'message' => "تم تطبيق العرض بنجاح، وسيُطبّق الخصم على الجلسات من اليوم وحتى {$offer->end_date->toDateString()}."
         ]);
     }
+
+
+//     /**
+//      * تطبيق عرض على علاج محدد
+//      */
+//     public function apply(Request $request, int $offerId): JsonResponse
+//     {
+//         $request->validate([
+//             'treatment_id' => ['required', 'integer', 'exists:treatments,id'],
+//         ]);
+
+//         $patientId = $request->user()->patient->id;
+//         $today = now()->toDateString();
+
+//         $offer = CenterOffer::where('id', $offerId)
+//             ->where('is_active', 1)
+//             ->whereDate('start_date', '<=', $today)
+//             ->whereDate('end_date', '>=', $today)
+//             ->first();
+
+//         if (!$offer) {
+//             return response()->json([
+//                 'success' => false,
+//                 'message' => 'هذا العرض غير متاح حالياً.'
+//             ], 404);
+//         }
+
+//         $treatment = Treatment::where('id', $request->treatment_id)
+//             ->where('patient_id', $patientId)
+//             ->first();
+
+//         if (!$treatment) {
+//             return response()->json([
+//                 'success' => false,
+//                 'message' => 'العلاج غير موجود.'
+//             ], 404);
+//         }
+
+//         if (TreatmentOffer::where('treatment_id', $treatment->id)->exists()) {
+//             return response()->json([
+//                 'success' => false,
+//                 'message' => 'تم استخدام عرض على هذا العلاج مسبقاً.'
+//             ], 422);
+//         }
+// try {
+//             DB::transaction(function () use ($offer, $treatment) {
+//                 TreatmentOffer::create([
+//                     'treatment_id'        => $treatment->id,
+//                     'offer_id'            => $offer->id,
+//                     'discount_percentage' => $offer->discount_percentage,
+//                     'applied_at'          => now(),
+//                 ]);
+
+//                 $invoice = Invoice::where('treatment_id', $treatment->id)->first();
+//                 $invoice?->recalculate();
+//             });
+//         } catch (\Illuminate\Database\QueryException $e) {
+//             return response()->json([
+//                 'success' => false,
+//                 'message' => 'تم استخدام عرض على هذا العلاج مسبقاً.'
+//             ], 422);
+//         } catch (\Illuminate\Database\QueryException $e) {
+//             return response()->json([
+//                 'success' => false,
+//                 'message' => 'تم استخدام عرض على هذا العلاج مسبقاً.'
+//             ], 422);
+//         }
+
+//         return response()->json([
+//             'success' => true,
+//             'message' => 'تم تطبيق العرض بنجاح.'
+//         ]);
+//     }
 }

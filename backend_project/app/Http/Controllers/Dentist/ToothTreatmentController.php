@@ -67,6 +67,10 @@ class ToothTreatmentController extends Controller
         // Eager load procedures for the response
         $created->each(fn($tt) => $tt->load('procedure'));
 
+        if ($session->status === 'completed') {
+            \App\Models\Invoice::syncFromSession($session);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'تم إضافة معالجات الأسنان بنجاح.',
@@ -110,7 +114,16 @@ class ToothTreatmentController extends Controller
             ], 403);
         }
 
+        $invoiceItem = \App\Models\InvoiceItem::where('tooth_treatment_id', $toothTreatment->id)->first();
+
+
         $toothTreatment->delete();
+
+        if ($invoiceItem) {
+            $invoice = $invoiceItem->invoice;
+            $invoiceItem->delete();
+            $invoice->recalculate();
+        }
 
         return response()->json([
             'success' => true,

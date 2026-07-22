@@ -53,6 +53,12 @@ class Treatment extends Model
         return $this->hasOne(Invoice::class);
     }
 
+
+    public function treatmentOffer()
+    {
+        return $this->hasOne(TreatmentOffer::class);
+    }
+
     // ====================== Helper Methods ======================
 
     public function isOngoing(): bool

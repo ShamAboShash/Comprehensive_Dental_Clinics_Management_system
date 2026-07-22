@@ -24,6 +24,7 @@ return new class extends Migration
             // old invoices are not affected
             $table->string('description');
             $table->decimal('unit_price', 10, 2);
+             $table->decimal('discount_percentage', 5, 2)->default(0);
 
             $table->timestamps();
         });
