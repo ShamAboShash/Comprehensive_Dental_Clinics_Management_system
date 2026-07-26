@@ -120,18 +120,18 @@ class TreatmentController extends Controller
             'sessions.toothTreatments.procedure',
         ]);
 
-        // Today's approved appointments for this dentist
-        // that belong to this patient and are not yet linked to a session
+
+
         $todayAppointments = Appointment::where('dentist_id', $dentistId)
             ->where('patient_id', $treatment->patient_id)
             ->where('status', 'approved')
-            ->whereDate('appointment_time', Carbon::today())
+            ->whereDate('appointment_time', now()->toDateString())
             ->whereNotIn('id', function ($query) {
                 $query->select('appointment_id')
                     ->from('treatment_sessions')
                     ->whereNotNull('appointment_id');
             })
-            ->get(['id', 'appointment_time', 'type']);
+            ->get(['id', 'appointment_time', 'type', 'status']);
 
         return response()->json([
             'success' => true,
