@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Patient;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\OfferResource;
+use App\Http\Resources\patient\OfferResource;
 use App\Models\CenterOffer;
 use App\Models\Invoice;
 use App\Models\Treatment;

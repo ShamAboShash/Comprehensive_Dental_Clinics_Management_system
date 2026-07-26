@@ -156,13 +156,13 @@ Route::prefix('patient')->group(function () {
     Route::post('addComplaint', [PatientComplaintController::class, 'store']);
 
     // Invoices
-    Route::get('invoices/summary', [PatientInvoiceController::class, 'summary']);
-        Route::get('treatments/{treatmentId}/invoice', [PatientInvoiceController::class, 'show']);
+    Route::get('showAllInvoices', [PatientInvoiceController::class, 'summary']);
+    Route::get('invoiceForTreatment/{treatmentId}', [PatientInvoiceController::class, 'show']);
 
 
     // Offers
-    Route::get('offers', [PatientOfferController::class, 'index']);
-    Route::post('offers/{offerId}/apply', [PatientOfferController::class, 'apply']);
+    Route::get('showOffers', [PatientOfferController::class, 'index']);
+    Route::post('applyToOffer/{offerId}', [PatientOfferController::class, 'apply']);
 
     });
 });

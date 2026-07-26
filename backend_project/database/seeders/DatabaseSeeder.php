@@ -48,6 +48,9 @@ class DatabaseSeeder extends Seeder
             DrugInteractionSeeder::class,
             CenterInfoSeeder::class,
             ComplaintSeeder::class,
+            InvoiceSeeder::class,
+            PaymentSeeder::class,
+            CenterOfferSeeder::class,
 
 
             ]);
