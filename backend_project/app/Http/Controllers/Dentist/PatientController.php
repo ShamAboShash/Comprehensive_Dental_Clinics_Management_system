@@ -17,13 +17,13 @@ class PatientController extends Controller
     // ---------------------------------------------------------------
     // Helper: verify this dentist has an appointment with the patient
     // ---------------------------------------------------------------
-    private function hasAccess(int $dentistId, Patient $patient): bool
-    {
-        return Appointment::where('dentist_id', $dentistId)
-            ->where('patient_id', $patient->id)
-            ->whereNotIn('status', ['cancelled', 'rejected'])
-            ->exists();
-    }
+    // private function hasAccess(int $dentistId, Patient $patient): bool
+    // {
+    //     return Appointment::where('dentist_id', $dentistId)
+    //         ->where('patient_id', $patient->id)
+    //         ->whereNotIn('status', ['cancelled', 'rejected'])
+    //         ->exists();
+    // }
 
     // ---------------------------------------------------------------
     // GET /dentist/patients
@@ -60,7 +60,7 @@ class PatientController extends Controller
 
         $dentistId = $request->user()->employee->dentist->id;
 
-        if (!$this->hasAccess($dentistId, $patient)) {
+        if (!Appointment::dentistHasAccessToPatient($dentistId, $patient->id)) {
             return response()->json([
                 'success' => false,
                 'message' => 'ليس لديك صلاحية الوصول إلى بيانات هذا المريض.',
@@ -94,7 +94,7 @@ class PatientController extends Controller
 
         $dentistId = $request->user()->employee->dentist->id;
 
-        if (!$this->hasAccess($dentistId, $patient)) {
+        if (!Appointment::dentistHasAccessToPatient($dentistId, $patient->id)) {
             return response()->json([
                 'success' => false,
                 'message' => 'ليس لديك صلاحية تعديل بيانات هذا المريض.',

@@ -3,19 +3,22 @@
 namespace App\Http\Controllers\Dentist;
 
 use App\Http\Controllers\Controller;
-use App\Models\Patient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use App\Models\Appointment;
+use App\Models\Patient;
 use App\Models\Dentist;
+use App\Models\User;
 use App\Http\Resources\DentistProfileResource;
 use App\Http\Resources\DentistsResource;
 use App\Http\Requests\AddMedicalInfoRequest;
 use App\Http\Requests\UpdateDentistProfileRequest;
-use App\Models\User;
 use App\Enums\UserRole;
+use Carbon\Carbon;
 
 class DentistProfileController extends Controller
 {
+
     public function showProfile(Request $request)
     {
         $user = $request->user();
@@ -27,17 +30,17 @@ class DentistProfileController extends Controller
             ], 403);
         }
 
-        // $dentist = $user->dentist()
-        //     ->with(['specialization', 'workSchedules', 'employee'])
-        //     ->first();
-
-        $dentist = Dentist::with(['specialization', 'workSchedules', 'employee.user',
-        'employee.educations',
-        'employee.experiences',
-        'employee.skills',
-        'employee.trainings', ])
-            ->whereHas('employee', fn($q) => $q->where('user_id', $user->id))
-            ->first();
+        $dentist = Dentist::with([
+            'specialization',
+            'workSchedules',
+            'employee.user',
+            'employee.educations',
+            'employee.experiences',
+            'employee.skills',
+            'employee.trainings',
+        ])
+        ->whereHas('employee', fn($q) => $q->where('user_id', $user->id))
+        ->first();
 
         if (!$dentist) {
             return response()->json([
@@ -46,74 +49,64 @@ class DentistProfileController extends Controller
             ], 404);
         }
 
+        $weekStart = Carbon::now()->startOfWeek(Carbon::SATURDAY);
+        $weekEnd   = Carbon::now()->endOfWeek(Carbon::FRIDAY);
+
+        $weeklyAppointments = Appointment::where('dentist_id', $dentist->id)
+            ->whereBetween('appointment_time', [$weekStart, $weekEnd])
+            ->selectRaw('status, count(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
         return response()->json([
             'success' => true,
-            'data' => new DentistProfileResource($dentist)
+            'data'    => new DentistProfileResource($dentist),
+            'weekly_appointments' => [
+                // 'week_start'    => $weekStart->toDateString(),
+                // 'week_end'      => $weekEnd->toDateString(),
+                'count'         => $weeklyAppointments->sum(),
+                // 'pending'       => $weeklyAppointments->get('pending', 0),
+                // 'pending_secretary' => $weeklyAppointments->get('pending_secretary', 0),
+                // 'approved'      => $weeklyAppointments->get('approved', 0),
+                // 'completed'     => $weeklyAppointments->get('completed', 0),
+                // 'cancelled'     => $weeklyAppointments->get('cancelled', 0),
+                // 'rejected'      => $weeklyAppointments->get('rejected', 0),
+                // 'patient_no_show' => $weeklyAppointments->get('patient_no_show', 0),
+            ],
         ], 200);
     }
 
+    // public function showProfile(Request $request)
+    // {
+    //     $user = $request->user();
 
-//     public function addMedicalInfo(AddMedicalInfoRequest  $request, $patientId)
-//     {
+    //     if (!Gate::allows('view-dentist-profile')) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'غير مصرح لك بالوصول.'
+    //         ], 403);
+    //     }
 
-//         $user = $request->user();
+    //     $dentist = Dentist::with(['specialization', 'workSchedules', 'employee.user',
+    //     'employee.educations',
+    //     'employee.experiences',
+    //     'employee.skills',
+    //     'employee.trainings', ])
+    //         ->whereHas('employee', fn($q) => $q->where('user_id', $user->id))
+    //         ->first();
 
-//         if (!Gate::allows('add-medical-info')) {
-//             return response()->json([
-//                 'success' => false,
-//                 'message' => 'غير مصرح لك بالوصول، هذا الحساب ليس لطبيب أسنان.'
-//             ], 403);
-//         }
+    //     if (!$dentist) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'ملف الطبيب غير موجود في سجلات الموظفين.'
+    //         ], 404);
+    //     }
 
-//         $patient = Patient::find($patientId);
-//         if (!$patient) {
-//             return response()->json(['success' => false, 'message' => 'المريض غير موجود'], 404);
-//         }
-
-//         if ($request->has('allergies')) {
-//             foreach ($request->allergies as $name) {
-//                 $patient->allergies()->firstOrCreate(['allergy_name' => $name]);
-//             }
-//         }
-
-//         if ($request->has('chronic_diseases')) {
-//             foreach ($request->chronic_diseases as $disease) {
-//                 $patient->chronicDiseases()->create($disease);
-//             }
-//         }
-
-//         if ($request->has('medications')) {
-//             foreach ($request->medications as $med) {
-//                 $patient->medications()->create($med);
-//             }
-//         }
-// //ask if the frontend want this response or not
-//         $patient->load(['allergies', 'chronicDiseases.category', 'medications']);
-
-//         return response()->json([
-//         'success' => true,
-//         'message' => 'تم تحديث السجل الطبي للمريض بنجاح.',
-//         'data'    => [
-//             'patient_id'      => $patient->id,
-//             'allergies'       => $patient->allergies->map(fn($a) => [
-//                 'id'          => $a->id,
-//                 'name'        => $a->allergy_name,
-//             ]),
-//             'chronic_diseases' => $patient->chronicDiseases->map(fn($d) => [
-//                 'id'           => $d->id,
-//                 'category'     => $d->category->name,
-//                 'problem_name' => $d->problem_name,
-//                 'severity'     => $d->severity,
-//             ]),
-//             'medications'       => $patient->medications->map(fn($m) => [
-//                 'id'            => $m->id,
-//                 'medication_name' => $m->name,
-//                 'dosage'        => $m->dosage,
-//                 'frequency'     => $m->frequency,
-//             ]),
-//         ],
-//     ], 200);
-//     }
+    //     return response()->json([
+    //         'success' => true,
+    //         'data' => new DentistProfileResource($dentist)
+    //     ], 200);
+    // }
 
 
 public function editProfile(UpdateDentistProfileRequest $request)

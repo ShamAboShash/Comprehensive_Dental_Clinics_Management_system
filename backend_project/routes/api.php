@@ -166,7 +166,7 @@ Route::prefix('patient')->group(function () {
 
     });
 });
-//7
+//29
 
 // ====================== SECRETARY ======================
 
@@ -174,7 +174,7 @@ Route::prefix('secretary')->middleware(['auth:sanctum', 'active'])->group(functi
     Route::get('/showAllAppointments',  [SecretaryAppointmentController::class, 'index']);
     Route::post('/addAppointment', [SecretaryAppointmentController::class, 'store']);
 });
-//1
+//2
 
 // ====================== ADMIN ======================
 
@@ -203,6 +203,7 @@ Route::prefix('dentist')->middleware(['auth:sanctum', 'active'])->group(function
 
     // Appointments
     Route::get('/dailyAppointments',                          [AppointmentController::class, 'daily']);
+    Route::get('/dentistAppointments/{patient}',              [AppointmentController::class, 'dentistAppointments']);
     Route::get('/yesterdayAppointments',                      [AppointmentController::class, 'yesterday']);
     Route::get('/weeklyAppointments',                         [AppointmentController::class, 'weekly']);
     Route::get('/monthlyAppointments',                        [AppointmentController::class, 'monthly']);

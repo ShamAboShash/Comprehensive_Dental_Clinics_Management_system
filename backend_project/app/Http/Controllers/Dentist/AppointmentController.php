@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Dentist\UpdateAppointmentStatusRequest;
 use App\Http\Resources\Dentist\AppointmentResource;
 use App\Models\Appointment;
+use App\Models\Patient;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -39,6 +40,36 @@ class AppointmentController extends Controller
     return response()->json([
         'success' => true,
         'date'    => Carbon::today()->toDateString(),
+        'count'   => $appointments->count(),
+        'data'    => AppointmentResource::collection($appointments),
+    ]);
+}
+
+// ---------------------------------------------------------------
+// GET /dentist/patients/{patient}/appointments
+// Show all appointments between this dentist and patient
+// ---------------------------------------------------------------
+public function dentistAppointments(Request $request, Patient $patient): JsonResponse
+{
+    Gate::authorize('is-dentist');
+
+    $dentistId = $this->getDentistId($request);
+
+    if (!Appointment::dentistHasAccessToPatient($dentistId, $patient->id)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'ليس لديك صلاحية الوصول إلى بيانات هذا المريض.',
+        ], 403);
+    }
+
+    $appointments = Appointment::with(['appointmentType', 'treatment.treatmentType'])
+        ->where('dentist_id', $dentistId)
+        ->where('patient_id', $patient->id)
+        ->orderBy('appointment_time')
+        ->get();
+
+    return response()->json([
+        'success' => true,
         'count'   => $appointments->count(),
         'data'    => AppointmentResource::collection($appointments),
     ]);

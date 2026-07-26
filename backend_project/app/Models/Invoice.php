@@ -56,38 +56,28 @@ class Invoice extends Model
 
         $session->load('toothTreatments.procedure');
 
-        $activeOffer = self::activeOfferFor($treatment);
+        // ✅ تحديد نسبة الخصم الحالية إن كان هناك عرض ساري على هذا العلاج الآن
+        $discount = self::currentOfferDiscount($treatment);
 
         foreach ($session->toothTreatments as $toothTreatment) {
             $exists = $invoice->items()
                 ->where('tooth_treatment_id', $toothTreatment->id)
                 ->exists();
 
-            if ($exists) {
-                continue;
+            if (!$exists) {
+                $invoice->items()->create([
+                    'tooth_treatment_id'   => $toothTreatment->id,
+                    'description'          => $toothTreatment->procedure->name,
+                    'unit_price'           => $toothTreatment->procedure->price,
+                    'discount_percentage'  => $discount, // ✅ يُحفظ مع البند نفسه، ولا يتغير لاحقاً
+                ]);
             }
-
-            $basePrice = (float) $toothTreatment->procedure->price;
-            $finalPrice = $basePrice;
-            $description = $toothTreatment->procedure->name;
-
-            if ($activeOffer) {
-                $finalPrice = round($basePrice - ($basePrice * $activeOffer->discount_percentage / 100), 2);
-                $description .= " (خصم {$activeOffer->discount_percentage}%)";
-            }
-
-            $invoice->items()->create([
-                'tooth_treatment_id' => $toothTreatment->id,
-                'description'        => $description,
-                'unit_price'         => $finalPrice,
-            ]);
         }
 
         $invoice->recalculate();
 
         return $invoice;
     }
-
     /**
      * التحقق مما إذا كان يوجد عرض ساري على هذا العلاج في تاريخ اليوم
      * (بين تاريخ تطبيقه وتاريخ انتهاء العرض نفسه)
@@ -109,12 +99,36 @@ class Invoice extends Model
         return $isWithinWindow ? $treatmentOffer : null;
     }
 
+
+
     /**
      * إعادة حساب الإجمالي وحالة الفاتورة فقط (لا علاقة له بالخصم بعد الآن)
      */
+private static function currentOfferDiscount(Treatment $treatment): float
+    {
+        $treatmentOffer = $treatment->treatmentOffer;
+
+        if (!$treatmentOffer) {
+            return 0.0;
+        }
+
+        $now = now();
+        $offerEnd = $treatmentOffer->offer->end_date;
+
+        // الخصم يسري فقط من تاريخ التطبيق وحتى نهاية العرض
+        if ($now->lt($treatmentOffer->applied_at) || $now->gt($offerEnd)) {
+            return 0.0;
+        }
+
+        return (float) $treatmentOffer->discount_percentage;
+    }
+
+    /**
+     * إعادة حساب الإجمالي كمجموع الأسعار الفعلية لكل بند (بعد خصمه الخاص إن وجد)
+     */
     public function recalculate(): void
     {
-        $this->total_amount = $this->items()->sum('unit_price');
+        $this->total_amount = $this->items->sum(fn ($item) => $item->finalPrice());
 
         $this->status = match (true) {
             $this->paid_amount >= $this->total_amount && $this->total_amount > 0 => 'paid',

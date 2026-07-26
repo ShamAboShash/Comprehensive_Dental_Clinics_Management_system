@@ -40,12 +40,11 @@ class PatientOfferController extends Controller
         ]);
     }
 
-    <?php
-
     /**
      * تطبيق عرض على علاج محدد — يبدأ الخصم من الآن حتى نهاية العرض
      * الجلسات السابقة تبقى بسعرها الأصلي، ولا تأثير رجعي على الفاتورة
      */
+
     public function apply(Request $request, int $offerId): JsonResponse
     {
         $request->validate([
@@ -77,21 +76,14 @@ class PatientOfferController extends Controller
             return response()->json(['success' => false, 'message' => 'تم استخدام عرض على هذا العلاج مسبقاً.'], 422);
         }
 
-        try {
-            TreatmentOffer::create([
-                'treatment_id'        => $treatment->id,
-                'offer_id'            => $offer->id,
-                'discount_percentage' => $offer->discount_percentage,
-                'applied_at'          => now(),
-            ]);
-        } catch (\Illuminate\Database\QueryException $e) {
-            return response()->json(['success' => false, 'message' => 'تم استخدام عرض على هذا العلاج مسبقاً.'], 422);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => "تم تطبيق العرض بنجاح، وسيُطبّق الخصم على الجلسات من اليوم وحتى {$offer->end_date->toDateString()}."
+        TreatmentOffer::create([
+            'treatment_id'        => $treatment->id,
+            'offer_id'            => $offer->id,
+            'discount_percentage' => $offer->discount_percentage,
+            'applied_at'          => now(),
         ]);
+
+        return response()->json(['success' => true, 'message' => 'تم تطبيق العرض بنجاح. سيتم تطبيق الخصم على الجلسات القادمة حتى نهاية فترة العرض.']);
     }
 
 

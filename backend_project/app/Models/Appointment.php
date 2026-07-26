@@ -83,4 +83,12 @@ class Appointment extends Model
     {
         return $this->status === 'approved';
     }
+
+    public static function dentistHasAccessToPatient(int $dentistId, int $patientId): bool
+{
+    return static::where('dentist_id', $dentistId)
+        ->where('patient_id', $patientId)
+        ->whereNotIn('status', ['cancelled', 'rejected'])
+        ->exists();
+}
 }
