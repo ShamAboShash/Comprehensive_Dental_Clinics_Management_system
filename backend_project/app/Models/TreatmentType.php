@@ -15,4 +15,15 @@ class TreatmentType extends Model
     {
         return $this->hasMany(Treatment::class);
     }
+
+    public function offers()
+{
+    return $this->belongsToMany(
+        CenterOffer::class,
+        'center_offer_treatment_type',
+        'treatment_type_id',
+        'center_offer_id'
+    )->withTimestamps();
+}
+
 }

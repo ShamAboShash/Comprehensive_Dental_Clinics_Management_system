@@ -10,53 +10,61 @@ class AppointmentTypeSeeder extends Seeder
 {
     public function run(): void
     {
-        $types = [
+        $appointmentTypes = [
             [
-                'name'    => 'استشارة',
-                'name_en' => 'Consultation',
-                'specializations' => ['عام'],
+                'name'    => 'كشف عام',
+                'name_en' => 'General Checkup',
+                'specializations' => [1, 2, 3, 4, 5, 6], // almost all
             ],
             [
                 'name'    => 'تقويم أسنان',
-                'name_en' => 'Orthodontics',
-                'specializations' => ['تقويم أسنان'],
-            ],
-            [
-                'name'    => 'تسوس أسنان',
-                'name_en' => 'Dental Caries',
-                'specializations' => ['عام', 'طب أسنان أطفال'],
-            ],
-            [
-                'name'    => 'جراحة أسنان',
-                'name_en' => 'Dental Surgery',
-                'specializations' => ['جراحة فم وأسنان'],
-            ],
-            [
-                'name'    => 'تبييض أسنان',
-                'name_en' => 'Teeth Whitening',
-                'specializations' => ['عام', 'تجميل أسنان'],
+                'name_en' => 'Orthodontic Consultation',
+                'specializations' => [1], // تقويم
             ],
             [
                 'name'    => 'زراعة أسنان',
-                'name_en' => 'Dental Implants',
-                'specializations' => ['زراعة أسنان', 'جراحة فم وأسنان'],
+                'name_en' => 'Dental Implant Consultation',
+                'specializations' => [2, 3], // جراحة + تركيبات
+            ],
+            [
+                'name'    => 'علاج أطفال',
+                'name_en' => 'Pediatric Consultation',
+                'specializations' => [4], // أطفال
+            ],
+            [
+                'name'    => 'علاج جذور',
+                'name_en' => 'Root Canal Consultation',
+                'specializations' => [5], // علاج جذور
+            ],
+            [
+                'name'    => 'تجميل وتبييض',
+                'name_en' => 'Cosmetic Consultation',
+                'specializations' => [6], // تجميل
+            ],
+            [
+                'name'    => 'تركيبات أسنان',
+                'name_en' => 'Prosthodontic Consultation',
+                'specializations' => [3], // تركيبات
+            ],
+            [
+                'name'    => 'جراحة فم',
+                'name_en' => 'Oral Surgery Consultation',
+                'specializations' => [2], // جراحة
             ],
         ];
 
-        foreach ($types as $typeData) {
-            $type = AppointmentType::create([
-                'name'    => $typeData['name'],
-                'name_en' => $typeData['name_en'],
-            ]);
+        foreach ($appointmentTypes as $data) {
+            $type = AppointmentType::updateOrCreate(
+                ['name' => $data['name']],
+                [
+                    'name'    => $data['name'],
+                    'name_en' => $data['name_en'],
+                ]
+            );
 
-            $specializationIds = Specialization::whereIn('name', $typeData['specializations'])
-                ->pluck('id');
-
-            if ($specializationIds->isEmpty()) {
-                $this->command->warn("لم يتم العثور على اختصاصات لنوع الموعد: {$typeData['name']}");
-            }
-
-            $type->specializations()->attach($specializationIds);
+            // Attach specializations
+            $type->specializations()->sync($data['specializations']);
         }
+
     }
 }

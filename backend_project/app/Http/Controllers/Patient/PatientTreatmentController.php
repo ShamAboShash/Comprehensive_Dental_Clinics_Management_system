@@ -91,5 +91,29 @@ class PatientTreatmentController extends Controller
             'data'    => new TreatmentResource($treatment),
         ]);
     }
+    public function treatmentsByType(Request $request, int $treatmentTypeId)
+    {
+        // Optional: validate that the treatment type exists
+        if (!\App\Models\TreatmentType::where('id', $treatmentTypeId)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'نوع العلاج غير موجود',
+            ], 404);
+        }
+
+        $patientId = $request->user()->patient->id;
+
+        $treatments = Treatment::with(['treatmentType'])
+            ->where('patient_id', $patientId)
+            ->where('treatment_type_id', $treatmentTypeId)
+            ->where('status', 'ongoing')
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $treatments,
+        ]);
+    }
 
 }

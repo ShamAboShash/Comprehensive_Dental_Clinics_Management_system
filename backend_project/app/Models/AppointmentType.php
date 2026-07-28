@@ -11,8 +11,18 @@ class AppointmentType extends Model
         'name_en',
     ];
 
-    public function specializations()
+//     public function specializations()
+// {
+//     return $this->belongsToMany(Specialization::class, 'appointment_type_specializations');
+// }
+public function specializations()
 {
-    return $this->belongsToMany(Specialization::class, 'appointment_type_specializations');
+    return $this->belongsToMany(
+        Specialization::class,
+        'appointment_type_specializations',
+        'appointment_type_id',
+        'specialization_id'
+    );
 }
+
 }

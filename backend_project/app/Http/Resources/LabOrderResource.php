@@ -1,35 +1,5 @@
 <?php
 
-// namespace App\Http\Resources;
-
-// use Illuminate\Http\Resources\Json\JsonResource;
-
-// class LabOrderResource extends JsonResource
-// {
-//     public function toArray($request): array
-//     {
-//         return [
-//             'id'            => $this->id,
-//             'status'        => $this->status,
-//             'notes'         => $this->notes,
-//             'lab_item'      => new LabItemResource($this->whenLoaded('labOrderType')),
-//             'technician'    => new TechnicianResource($this->whenLoaded('technician')),
-//             'modifications' => LabOrderModificationResource::collection($this->whenLoaded('modifications')),
-//             'patient'       => $this->whenLoaded('treatment', fn() => [
-//                 'id'   => $this->treatment->patient->user->id ?? null,
-//                 'name' => $this->treatment->patient->user->name ?? null,
-//             ]),
-//             'dentist'       => $this->whenLoaded('treatment', fn() => [
-//                 'id'   => $this->treatment->dentist->user->id ?? null,
-//                 'name' => $this->treatment->dentist->user->name ?? null,
-//             ]),
-//             'created_at'    => $this->created_at->toDateTimeString(),
-//             'updated_at'    => $this->updated_at->toDateTimeString(),
-//         ];
-//     }
-// }
-
-
 
 namespace App\Http\Resources;
 
@@ -51,7 +21,8 @@ class LabOrderResource extends JsonResource
 
             'dentist'    => $this->whenLoaded('dentist', fn() => [
                 'id'   => $this->dentist->id,
-                'name' => $this->dentist->employee->user->name,
+                'name' => $this->dentist->employee?->user?->name
+                    ?? $this->dentist->user?->name,
             ]),
 
             'patient'    => $this->whenLoaded('patient', fn() => [

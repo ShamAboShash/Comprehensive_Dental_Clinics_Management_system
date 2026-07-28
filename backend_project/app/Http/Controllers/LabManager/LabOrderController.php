@@ -526,56 +526,29 @@ class LabOrderController extends Controller
         ]);
     }
 
-    // // PATCH /lab/orders/{id}/set-in-progress
-    // public function setInProgress($id)
-    // {
-    //     $order = LabOrder::find($id);
-
-    //     if (!$order) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'الطلب غير موجود',
-    //         ], 404);
-    //     }
-
-    //     if ($order->status !== 'pending') {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'يمكن بدء العمل فقط على الطلبات المعلقة',
-    //         ], 422);
-    //     }
-
-    //     $order->update(['status' => 'in_progress']);
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'message' => 'تم بدء العمل على الطلب',
-    //         'data'    => new LabOrderResource($order->fresh(['items.labOrderType', 'technician.user'])),
-    //     ]);
-    // }
-
     // PATCH /lab/orders/{id}/set-completed
-    public function setCompleted(SetOrderCompletedRequest $request, $id)
-    {
-        $order = LabOrder::find($id);
+public function setCompleted(SetOrderCompletedRequest $request, $id)
+{
+    $order = LabOrder::find($id);
 
-        if (!$order) {
-            return response()->json([
-                'success' => false,
-                'message' => 'الطلب غير موجود',
-            ], 404);
-        }
+    if (!$order) {
+        return response()->json([
+            'success' => false,
+            'message' => 'الطلب غير موجود',
+        ], 404);
+    }
 
-        if ($order->status !== 'in_progress') {
-            return response()->json([
-                'success' => false,
-                'message' => 'يمكن إكمال الطلبات قيد التنفيذ فقط',
-            ], 422);
-        }
-If($request->materials){
-        DB::beginTransaction();
+    if ($order->status !== 'in_progress') {
+        return response()->json([
+            'success' => false,
+            'message' => 'يمكن إكمال الطلبات قيد التنفيذ فقط',
+        ], 422);
+    }
 
-        try {
+    DB::beginTransaction();
+
+    try {
+        if ($request->filled('materials')) {
             foreach ($request->materials as $item) {
                 $stock = LabStock::with('material')
                     ->where('material_id', $item['material_id'])
@@ -591,7 +564,6 @@ If($request->materials){
 
                 $stock->decrement('quantity', $item['quantity_used']);
 
-                // Log as negative — deduction
                 LabStockLog::create([
                     'material_id'  => $stock->material_id,
                     'lab_stock_id' => $stock->id,
@@ -601,66 +573,65 @@ If($request->materials){
                     'done_by'      => $request->user()->id,
                 ]);
 
-                // Record materials used — store positive (how much was used)
                 LabOrderMaterial::create([
                     'lab_order_id'  => $order->id,
                     'material_id'   => $item['material_id'],
                     'quantity_used' => $item['quantity_used'],
                 ]);
-
-                // Auto notify lab manager if stock dropped below threshold
-                $stock->refresh();
-                if ($stock->quantity <= LabStockController::LOW_STOCK_THRESHOLD) {
-                    $labManagers = User::where('role', UserRole::LAB_MANAGER)
-                        ->where('is_active', true)
-                        ->get();
-
-                    // foreach ($labManagers as $manager) {
-                    //     NotificationService::send(
-                    //         user: $manager,
-                    //         title: 'تنبيه: مخزون منخفض',
-                    //         body: "المادة ({$stock->material->name}) وصلت لحد التنبيه في مخزن المختبر",
-                    //         type: 'low_stock_alert',
-                    //         referenceable: null,
-                    //     );
-                    // }
-                }
             }
-
-
-            // Notify dentist
-            // if ($order->dentist?->user) {
-            //     NotificationService::send(
-            //         user: $order->dentist->user,
-            //         title: 'طلب المختبر مكتمل',
-            //         body: "تم إنجاز طلب المختبر #{$order->id} بنجاح",
-            //         type: 'lab_order_completed',
-            //         referenceable: $order,
-            //     );
-            // }
-
-            DB::commit();
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            return response()->json([
-                'success' => false,
-                'message' => 'حدث خطأ أثناء إكمال الطلب',
-            ], 500);
         }
-    }
 
-            $order->update(['status' => 'completed']);
+        $order->update(['status' => 'completed']);
 
+        DB::commit();
 
         return response()->json([
-                'success' => true,
-                'message' => 'تم إكمال الطلب بنجاح',
-                'data'    => new LabOrderResource($order->fresh(['items.labOrderType', 'technician.user', 'modifications'])),
-            ]);
-    }
+            'success' => true,
+            'message' => 'تم إكمال الطلب بنجاح',
+            'data'    => new LabOrderResource($order->fresh([
+                'items.labOrderType',
+                'technician.user',
+                'modifications'
+            ])),
+        ]);
 
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'message' => 'حدث خطأ أثناء إكمال الطلب',
+        ], 500);
+    }
+}
+
+                        // Auto notify lab manager if stock dropped below threshold
+                    // $stock->refresh();
+                    // if ($stock->quantity <= LabStockController::LOW_STOCK_THRESHOLD) {
+                    //     $labManagers = User::where('role', UserRole::LAB_MANAGER)
+                    //         ->where('is_active', true)
+                    //         ->get();
+
+                        // foreach ($labManagers as $manager) {
+                        //     NotificationService::send(
+                        //         user: $manager,
+                        //         title: 'تنبيه: مخزون منخفض',
+                        //         body: "المادة ({$stock->material->name}) وصلت لحد التنبيه في مخزن المختبر",
+                        //         type: 'low_stock_alert',
+                        //         referenceable: null,
+                        //     );
+                        // }
+                    // }
+
+                // Notify dentist
+                // if ($order->dentist?->user) {
+                //     NotificationService::send(
+                //         user: $order->dentist->user,
+                //         title: 'طلب المختبر مكتمل',
+                //         body: "تم إنجاز طلب المختبر #{$order->id} بنجاح",
+                //         type: 'lab_order_completed',
+                //         referenceable: $order,
+                //     );
+                // }
     // PATCH /lab/orders/{id}/set-cancelled
     public function setCancelled($id)
     {

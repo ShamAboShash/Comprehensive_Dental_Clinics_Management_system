@@ -139,11 +139,12 @@ Route::prefix('patient')->group(function () {
     Route::post('addDentistRate/{dentistId}', [PatientDentistRatingController::class, 'rate']);
     Route::get('showDentistRate/{dentistId}', [PatientDentistRatingController::class, 'myRating']);
     Route::get('showDentistDetails/{dentist}', [PatientDentistController::class, 'show']);
+    Route::get('dentistsByAppointmentType/{appointmentTypeId}', [PatientDentistController::class, 'byAppointmentType']);
 
     // Treatments
     Route::get('showAllTreatments', [PatientTreatmentController::class, 'index']);
     Route::get('showTreatmentdetails/{id}', [PatientTreatmentController::class, 'show']);
-
+    Route::get('treatmentsByType/{treatmentTypeId}', [PatientTreatmentController::class, 'treatmentsByType']);
     // Prescriptions
     Route::get('showAllPrescriptions', [PatientPrescriptionController::class, 'index']);
     Route::get('showPrescriptionDetails/{id}', [PatientPrescriptionController::class, 'show']);
@@ -163,6 +164,7 @@ Route::prefix('patient')->group(function () {
     // Offers
     Route::get('showOffers', [PatientOfferController::class, 'index']);
     Route::post('applyToOffer/{offerId}', [PatientOfferController::class, 'apply']);
+
 
     });
 });
@@ -314,6 +316,8 @@ Route::prefix('labManager')->middleware(['auth:sanctum', 'active'])->group(funct
     Route::get('notifications',              [NotificationController::class, 'index']);
     Route::patch('notifications/{id}/read',  [NotificationController::class, 'markAsRead']);
 
+    //reports
+    Route::get('reports', [LabDashboardController::class, 'reports']);
 });
 //38
 // add the reports and inventory

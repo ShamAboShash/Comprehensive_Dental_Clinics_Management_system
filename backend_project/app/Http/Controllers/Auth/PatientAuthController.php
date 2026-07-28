@@ -10,9 +10,7 @@ use App\Http\Requests\PatientVerifyEmailRequest;
 use App\Http\Requests\LoginRequest;
 use App\Mail\VerificationMail;
 use App\Models\Patient;
-use App\Models\PatientAllergy;
-use App\Models\PatientChronicDisease;
-use App\Models\PatientMedication;
+
 use App\Models\User;
 use App\Models\VerificationCode;
 use Illuminate\Support\Facades\Gate;
@@ -92,41 +90,6 @@ class PatientAuthController extends Controller
             'teeth_cleaning_frequency'    => $request->teeth_cleaning_frequency,
         ]);
 
-        // 3. Store Allergies
-        // if ($request->has('allergies') && is_array($request->allergies)) {
-        //     foreach ($request->allergies as $allergy) {
-        //         PatientAllergy::create([
-        //             'patient_id'   => $patient->id,
-        //             'allergy_name' => $allergy['allergy_name'] ?? '',
-        //         ]);
-        //     }
-        // }
-
-        // 4. Store Chronic Diseases
-        // if ($request->has('chronic_diseases') && is_array($request->chronic_diseases)) {
-        //     foreach ($request->chronic_diseases as $disease) {
-        //         PatientChronicDisease::create([
-        //             'patient_id'   => $patient->id,
-        //             'category'     => $disease['category'] ?? null,
-        //             'problem_name' => $disease['problem_name'] ?? '',
-        //             'details'      => $disease['details'] ?? null,
-        //             'severity'     => $disease['severity'] ?? null,
-        //         ]);
-        //     }
-        // }
-
-        // 5. Store Medications
-        // if ($request->has('medications') && is_array($request->medications)) {
-        //     foreach ($request->medications as $med) {
-        //         PatientMedication::create([
-        //             'patient_id'   => $patient->id,
-        //             'medication_id'=> $med['medication_id'] ?? null,
-        //             'dosage'       => $med['dosage'] ?? null,
-        //             'frequency'    => $med['frequency'] ?? null,
-        //             'notes'        => $med['notes'] ?? null,
-        //         ]);
-        //     }
-        // }
 
         $this->sendVerification($request);
         return response()->json([

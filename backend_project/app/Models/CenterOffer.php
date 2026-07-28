@@ -33,4 +33,15 @@ class CenterOffer extends Model
         return $this->is_active
             && now()->between($this->start_date, $this->end_date);
     }
+
+    public function treatmentTypes()
+{
+    return $this->belongsToMany(
+        TreatmentType::class,
+        'center_offer_treatment_type',
+        'center_offer_id',
+        'treatment_type_id'
+    )->withTimestamps();
+}
+
 }

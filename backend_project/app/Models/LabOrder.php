@@ -30,7 +30,7 @@ class LabOrder extends Model
         return $this->belongsTo(Treatment::class);
     }
 
-    public function treatmentsession()
+    public function treatmentSession()
     {
         return $this->belongsTo(TreatmentSession::class);
     }
@@ -67,15 +67,10 @@ class LabOrder extends Model
 
     // ====================== Helper Methods ======================
 
-    public function isPending(): bool
-    {
-        return $this->status === 'pending';
-    }
-
-    public function isDelivered(): bool
-    {
-        return $this->status === 'delivered';
-    }
+    public function isNew(): bool        { return $this->status === 'new'; }
+    public function isInProgress(): bool { return $this->status === 'in_progress'; }
+    public function isCompleted(): bool  { return $this->status === 'completed'; }
+    public function isCancelled(): bool  { return $this->status === 'cancelled'; }
 
     public function totalCost(): float
     {
