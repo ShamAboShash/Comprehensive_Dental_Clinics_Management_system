@@ -27,8 +27,9 @@ class EmployeeProfileResource extends JsonResource
             'hire_date' => $this->hire_date,
 
 
-            'schedule'   => $this->whenLoaded('workSchedules', fn() =>
-                $this->workSchedules->map(fn($s) => [
+            'schedule' => $this->whenLoaded('workSchedules', fn () =>
+                $this->workSchedules->map(fn ($s) => [
+                    'id'         => $s->id,
                     'day'        => $s->day_of_week,
                     'start_time' => $s->start_time,
                     'end_time'   => $s->end_time,

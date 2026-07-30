@@ -51,6 +51,7 @@ class DatabaseSeeder extends Seeder
             InvoiceSeeder::class,
             PaymentSeeder::class,
             CenterOfferSeeder::class,
+            EmployeeWorkScheduleSeeder::class,
 
 
             ]);

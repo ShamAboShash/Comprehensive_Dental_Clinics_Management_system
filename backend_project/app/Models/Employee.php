@@ -28,6 +28,11 @@ class Employee extends Model
         return $this->hasMany(EmployeeWorkSchedule::class);
     }
 
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
     public function labOrders()
     {
         return $this->hasMany(LabOrder::class, 'technician_id');

@@ -3,9 +3,13 @@
 use App\Http\Controllers\Auth\EmployeeAuthController;
 use App\Http\Controllers\Auth\PatientAuthController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
+
 use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\DentistController;
+use App\Http\Controllers\Admin\CenterController;
+use App\Http\Controllers\Admin\OpirationsController;
+
 
 use App\Http\Controllers\Dentist\DentistProfileController;
 use App\Http\Controllers\Dentist\AppointmentController;
@@ -89,7 +93,8 @@ Route::get('/labOrderTypeCategories',   [ShowThingsController::class, 'labOrderT
 Route::get('/labOrderTypes',            [ShowThingsController::class, 'labOrderTypes']);
 Route::get('/centerInfo',                [ShowThingsController::class, 'centerInfo']);
 
-//15
+//16
+
 // ====================== EMPLOYEE ======================
 
 Route::prefix('employee')->group(function () {
@@ -108,6 +113,7 @@ Route::prefix('employee')->group(function () {
     });
 
 });
+
 //7
 
 // ====================== PATIENT ======================
@@ -126,49 +132,49 @@ Route::prefix('patient')->group(function () {
         Route::post('/editProfile', [PatientProfileController::class, 'editProfile']);
 
         // Appointments
-    Route::get('showAppointments', [PatientAppointmentController::class, 'index']);
-    Route::get('showPreviousAppointments', [PatientAppointmentController::class, 'previous']);
-    Route::get('showAppointmentdetails/{id}', [PatientAppointmentController::class, 'show']);
-    Route::post('addAppointment', [PatientAppointmentController::class, 'store']);
-    Route::post('updateAppointments/{id}', [PatientAppointmentController::class, 'update']);
-    Route::post('cancelAppointment/{id}', [PatientAppointmentController::class, 'cancel']);
+        Route::get('showAppointments', [PatientAppointmentController::class, 'index']);
+        Route::get('showPreviousAppointments', [PatientAppointmentController::class, 'previous']);
+        Route::get('showAppointmentdetails/{id}', [PatientAppointmentController::class, 'show']);
+        Route::post('addAppointment', [PatientAppointmentController::class, 'store']);
+        Route::post('updateAppointments/{id}', [PatientAppointmentController::class, 'update']);
+        Route::post('cancelAppointment/{id}', [PatientAppointmentController::class, 'cancel']);
 
-    // Dentists
-    Route::get('showDentistsBySpecialization/{specialization_id}', [PatientDentistController::class, 'index']);
-    Route::get('showDentistSchedule/{dentist}/', [DentistScheduleController::class, 'availableSlots']);
-    Route::post('addDentistRate/{dentistId}', [PatientDentistRatingController::class, 'rate']);
-    Route::get('showDentistRate/{dentistId}', [PatientDentistRatingController::class, 'myRating']);
-    Route::get('showDentistDetails/{dentist}', [PatientDentistController::class, 'show']);
-    Route::get('dentistsByAppointmentType/{appointmentTypeId}', [PatientDentistController::class, 'byAppointmentType']);
+        // Dentists
+        Route::get('showDentistsBySpecialization/{specialization_id}', [PatientDentistController::class, 'index']);
+        Route::get('showDentistSchedule/{dentist}/', [DentistScheduleController::class, 'availableSlots']);
+        Route::post('addDentistRate/{dentistId}', [PatientDentistRatingController::class, 'rate']);
+        Route::get('showDentistRate/{dentistId}', [PatientDentistRatingController::class, 'myRating']);
+        Route::get('showDentistDetails/{dentist}', [PatientDentistController::class, 'show']);
+        Route::get('dentistsByAppointmentType/{appointmentTypeId}', [PatientDentistController::class, 'byAppointmentType']);
 
-    // Treatments
-    Route::get('showAllTreatments', [PatientTreatmentController::class, 'index']);
-    Route::get('showTreatmentdetails/{id}', [PatientTreatmentController::class, 'show']);
-    Route::get('treatmentsByType/{treatmentTypeId}', [PatientTreatmentController::class, 'treatmentsByType']);
-    // Prescriptions
-    Route::get('showAllPrescriptions', [PatientPrescriptionController::class, 'index']);
-    Route::get('showPrescriptionDetails/{id}', [PatientPrescriptionController::class, 'show']);
+        // Treatments
+        Route::get('showAllTreatments', [PatientTreatmentController::class, 'index']);
+        Route::get('showTreatmentdetails/{id}', [PatientTreatmentController::class, 'show']);
+        Route::get('treatmentsByType/{treatmentTypeId}', [PatientTreatmentController::class, 'treatmentsByType']);
+        // Prescriptions
+        Route::get('showAllPrescriptions', [PatientPrescriptionController::class, 'index']);
+        Route::get('showPrescriptionDetails/{id}', [PatientPrescriptionController::class, 'show']);
 
-    // Treatment photos
-    Route::get('showAllTreatmentPhotos', [PatientTreatmentPhotoController::class, 'index']);
+        // Treatment photos
+        Route::get('showAllTreatmentPhotos', [PatientTreatmentPhotoController::class, 'index']);
 
-    // Complaints
-    Route::get('showAllComplaints', [PatientComplaintController::class, 'index']);
-    Route::post('addComplaint', [PatientComplaintController::class, 'store']);
+        // Complaints
+        Route::get('showAllComplaints', [PatientComplaintController::class, 'index']);
+        Route::post('addComplaint', [PatientComplaintController::class, 'store']);
 
-    // Invoices
-    Route::get('showAllInvoices', [PatientInvoiceController::class, 'summary']);
-    Route::get('invoiceForTreatment/{treatmentId}', [PatientInvoiceController::class, 'show']);
+        // Invoices
+        Route::get('showAllInvoices', [PatientInvoiceController::class, 'summary']);
+        Route::get('invoiceForTreatment/{treatmentId}', [PatientInvoiceController::class, 'show']);
 
 
-    // Offers
-    Route::get('showOffers', [PatientOfferController::class, 'index']);
-    Route::post('applyToOffer/{offerId}', [PatientOfferController::class, 'apply']);
-
+        // Offers
+        Route::get('showOffers', [PatientOfferController::class, 'index']);
+        Route::post('applyToOffer/{offerId}', [PatientOfferController::class, 'apply']);
 
     });
 });
-//29
+
+//31
 
 // ====================== SECRETARY ======================
 
@@ -176,24 +182,59 @@ Route::prefix('secretary')->middleware(['auth:sanctum', 'active'])->group(functi
     Route::get('/showAllAppointments',  [SecretaryAppointmentController::class, 'index']);
     Route::post('/addAppointment', [SecretaryAppointmentController::class, 'store']);
 });
+
 //2
 
 // ====================== ADMIN ======================
 
 Route::prefix('admin')->middleware(['auth:sanctum', 'active'])->group(function () {
-
+    //profile
     Route::get('/showProfile',                       [AdminProfileController::class, 'showProfile']);
-    Route::post('/createEmployee',                   [EmployeeController::class,     'createEmployee']);
-    Route::post('/updateEmployee/{employee}',        [EmployeeController::class,     'updateEmployee']);
-    Route::post('/toggleUser/{user}',                [EmployeeController::class,     'toggleUser']);
-    Route::get('/showEmployeeDetails/{employeeId}',  [EmployeeController::class,     'showEmployeeDetails']);
     Route::get('/showPatientProfile/{patientId}',    [EmployeeController::class,     'showPatientProfile']);
+    Route::post('/toggleUser/{user}',                [EmployeeController::class,     'toggleUser']);
+    //dentist
     Route::post('/createDentist',                    [DentistController::class,      'createDentist']);
     Route::post('/updateDentist/{user}',             [DentistController::class,      'updateDentist']);
     Route::get('/showDentistDetails/{user}',         [DentistController::class,      'showDentistDetails']);
-
+    Route::post('/attendance/dentists',           [DentistController::class, 'monthlyDentists']);
+    Route::post('/dentist-schedules/{schedule}',  [DentistController::class, 'updateDentistWS']);
+    Route::get('/showDentistBySpecialization/{specializationId}', [DentistController::class, 'bySpecialization']);
+    //center info
+    Route::get('/warehouseInventory',            [CenterController::class, 'getWarehouseInventory']);
+    //employee
+    Route::get('/showEmployeeDetails/{employeeId}',  [EmployeeController::class,     'showEmployeeDetails']);
+    Route::post('/createEmployee',                   [EmployeeController::class,     'createEmployee']);
+    Route::post('/updateEmployee/{employee}',        [EmployeeController::class,     'updateEmployee']);
+    Route::get('/employeeMonthlyAttendance/{employee}', [EmployeeController::class, 'employeeMonthly']);
+    Route::post('/updateEmployeeWorkSchedule/{schedule}', [EmployeeController::class, 'updateEmployeeWS']);
+    //clinic
+    Route::get('/showAllClinics',                        [CenterController::class, 'ClinicIndex']);
+    Route::post('/addClinic',                       [CenterController::class, 'clinicStore']);
+    Route::post('/updateClinic/{clinic}',              [CenterController::class, 'clinicUpdate']);
+    // Specialization
+    Route::post('/addSpecialization',               [OpirationsController::class, 'specializationStore']);
+    Route::post('/updateSpecialization/{specialization}', [OpirationsController::class, 'specializationUpdate']);
+    Route::post('/deleteSpecialization/{specialization}', [OpirationsController::class, 'specializationDestroy']);
+    // Treatment Types
+    Route::post('/addTreatmentType',               [OpirationsController::class, 'treatmentStore']);
+    Route::post('/updateTreatmentType/{treatmentType}', [OpirationsController::class, 'treatmentUpdate']);
+    Route::post('/deleteTreatmentType/{treatmentType}', [OpirationsController::class, 'treatmentDestroy']);
+    // Medications
+    Route::post('/addMedication',                   [OpirationsController::class, 'medicationStore']);
+    Route::post('/updateMedication/{medication}',      [OpirationsController::class, 'medicationUpdate']);
+    Route::post('/deleteMedication/{medication}', [OpirationsController::class, 'medicationDestroy']);
+    // Procedures
+    Route::post('/addProcedure',                    [OpirationsController::class, 'procedureStore']);
+    Route::post('/updateProcedure/{procedure}',        [OpirationsController::class, 'procedureUpdate']);
+    Route::post('/deleteProcedure/{procedure}', [OpirationsController::class, 'procedureDestroy']);
+    // Complaints
+    Route::post('/showComplaints',                    [CenterController::class, 'complaintIndex']);
+    Route::post('/updateComplaintStatus/{complaint}',        [CenterController::class, 'complaintUpdate']);
+    // Center info
+    Route::post('/updateCenterInfo',                 [CenterController::class, 'updateCenterInfo']);
 });
-//9
+
+//35
 
 // ====================== DENTIST ======================
 
@@ -254,7 +295,7 @@ Route::prefix('dentist')->middleware(['auth:sanctum', 'active'])->group(function
     Route::post('/cancelLabOrderModification/{labOrder}/{modification}', [DentistLabOrderController::class, 'cancelModification']);
 
 });
-//33
+//34
 
 // ====================== LAB MANAGER ======================
 
@@ -319,8 +360,9 @@ Route::prefix('labManager')->middleware(['auth:sanctum', 'active'])->group(funct
     //reports
     Route::get('reports', [LabDashboardController::class, 'reports']);
 });
-//38
-// add the reports and inventory
+
+//39
+
 // add the counts for each one
 
 

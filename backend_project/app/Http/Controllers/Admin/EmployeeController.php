@@ -14,11 +14,13 @@ use App\Models\EmployeeEducation;
 use App\Models\EmployeeExperience;
 use App\Models\EmployeeSkill;
 use App\Models\EmployeeTraining;
+use App\Models\EmployeeWorkSchedule;
 use App\Models\Patient;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Hash;
 
 class EmployeeController extends Controller
@@ -41,7 +43,7 @@ class EmployeeController extends Controller
                 $profilePicturePath = $request->file('profile_picture')
                     ->store('profile_pictures', 'public');
             } else {
-                $gender = $request->gender; 
+                $gender = $request->gender;
 
                 $defaultImage = ($gender == 1) ? 'profile_pictures/male.png' : 'profile_pictures/female.png';
 
@@ -69,17 +71,7 @@ class EmployeeController extends Controller
 
             $this->createRelatedData($employee, $request);
 
-            // if ($request->role === UserRole::DENTIST->value) {
-            //     Dentist::create([
-            //         'employee_id' => $employee->id,
-            //         'specialization_id' => $request->specialization_id,
-            //         'work_hours' => $request->work_hours,
-            //         'license_number' => $request->license_number,
-            //         'years_of_experience' => $request->years_of_experience,
-            //     ]);
-            // }
-
-            $user->load([ 'employee.educations', 'employee.experiences', 'employee.trainings', 'employee.skills']);
+            $user->load([ 'employee.educations', 'employee.experiences', 'employee.trainings', 'employee.skills','employee.workSchedules']);
 
             return response()->json([
                 'message' => 'Employee created successfully',
@@ -125,6 +117,17 @@ class EmployeeController extends Controller
                 ]);
             }
         }
+
+        if ($request->work_schedules) {
+            foreach ($request->work_schedules as $schedule) {
+                EmployeeWorkSchedule::create([
+                    'employee_id' => $employee->id,
+                    'day_of_week' => $schedule['day_of_week'],
+                    'start_time'  => $schedule['start_time'],
+                    'end_time'    => $schedule['end_time'],
+                ]);
+            }
+        }
     }
 
     public function updateEmployee(UpdateEmployeeRequest $request, User $employee)
@@ -156,26 +159,12 @@ class EmployeeController extends Controller
 
             $this->syncRelatedData($empData, $request);
 
-            // if ($employee->role === UserRole::DENTIST->value) {
-            //     Dentist::updateOrCreate(
-            //         ['employee_id' => $empData->id],
-            //         [
-            //             'specialization_id'   => $request->specialization_id,
-            //             'license_number'      => $request->license_number,
-            //             'years_of_experience' => $request->years_of_experience,
-            //             'bio'                 => $request->bio ?? null,
-            //         ]
-            //     );
-            // } elseif ($employee->wasChanged('role') && $employee->role !== UserRole::DENTIST->value) {
-            //     Dentist::where('employee_id', $empData->id)->delete();
-            // }
-
             $employee->load([
-                // 'employee.dentist',
                 'employee.educations',
                 'employee.experiences',
                 'employee.trainings',
-                'employee.skills'
+                'employee.skills',
+                'employee.workSchedules',
             ]);
 
             return response()->json([
@@ -260,7 +249,8 @@ class EmployeeController extends Controller
             'educations',
             'experiences',
             'skills',
-            'trainings'
+            'trainings',
+            'workSchedules',
         ])->findOrFail($employeeId);
 
         // Authorization using Gate
@@ -300,6 +290,105 @@ class EmployeeController extends Controller
         ], 200);
     }
 
+//    public function monthlyEmployees(Request $request){
+//         Gate::authorize('is-admin');
 
+//         $validated = $request->validate([
+//             'month' => 'nullable|integer|between:1,12',
+//             'year'  => 'nullable|integer|min:2000|max:2099',
+//         ]);
 
+//         $month = $validated['month'] ?? now()->month;
+//         $year  = $validated['year'] ?? now()->year;
+
+//         $employees = Employee::with([
+//             'user:id,name,email,phone,role',
+//             'attendances' => fn ($q) => $q->whereMonth('date', $month)
+//                 ->whereYear('date', $year)
+//                 ->orderBy('date'),
+//         ])->get();
+
+//         return response()->json([
+//             'success'         => true,
+//             'filter'          => ['month' => (int) $month, 'year' => (int) $year],
+//             'total_employees' => $employees->count(),
+//             'data'            => $employees,
+//         ]);
+//     }
+
+    public function employeeMonthly(Request $request, Employee $employee)
+    {
+        Gate::authorize('is-admin');
+
+        $validated = $request->validate([
+            'month' => 'nullable|integer|between:1,12',
+            'year'  => 'nullable|integer|min:2000|max:2099',
+        ]);
+
+        $month = $validated['month'] ?? now()->month;
+        $year  = $validated['year'] ?? now()->year;
+
+        $employee->load([
+            'user:id,name,email,phone,role',
+            'attendances' => fn ($q) => $q
+                ->whereMonth('date', $month)
+                ->whereYear('date', $year)
+                ->orderBy('date'),
+        ]);
+
+        return response()->json([
+        'success' => true,
+        'filter'  => [
+            'month'       => (int) $month,
+            'year'        => (int) $year,
+        ],
+        'data' => [
+            'employee_id'   => $employee->id,
+            'name' => $employee->user?->name,
+            'role' => $employee->user?->role?->value,
+            'attendance' => $employee->attendances->map(fn ($a) => [
+                'id'        => $a->id,
+                'date'      => $a->date?->toDateString(),
+                'check_in'  => $a->check_in,
+                'check_out' => $a->check_out,
+                'status'    => $a->status,
+                'notes'     => $a->notes,
+            ])->values(),
+        ],
+    ]);
+    }
+
+    public function updateEmployeeWS(Request $request, EmployeeWorkSchedule $schedule)
+    {
+        Gate::authorize('is-admin');
+
+        $validated = $request->validate([
+            'day_of_week' => ['sometimes', 'required', 'string', Rule::in(['saturday','sunday','monday','tuesday','wednesday','thursday','friday'])],
+            'start_time'  => 'sometimes|required|date_format:H:i',
+            'end_time'    => 'sometimes|required|date_format:H:i|after:start_time',
+        ]);
+
+        $dayOfWeek = $validated['day_of_week'] ?? $schedule->day_of_week;
+
+        $exists = EmployeeWorkSchedule::where('employee_id', $schedule->employee_id)
+            ->where('day_of_week', $dayOfWeek)
+            ->where('id', '!=', $schedule->id)
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'يمتلك الموظف بالفعل دواماً مسجلاً في هذا اليوم.',
+            ], 422);
+        }
+
+        $schedule->update($validated);
+        $schedule->load('employee.user:id,name,email');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم تعديل جدول دوام الموظف بنجاح',
+            'data'    => $schedule,
+        ]);
+    }
 }

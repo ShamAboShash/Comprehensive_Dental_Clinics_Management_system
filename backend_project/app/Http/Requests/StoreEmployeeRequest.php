@@ -47,6 +47,12 @@ class StoreEmployeeRequest extends FormRequest
             'license_number'    => 'required_if:role,' . UserRole::DENTIST->value . '|string|unique:dentists,license_number',
             'years_of_experience' => 'nullable|integer|min:0',
 
+            'work_schedules'                 => 'nullable|array',
+            'work_schedules.*.day_of_week'   => 'required|string|in:saturday,sunday,monday,tuesday,wednesday,thursday,friday',
+            'work_schedules.*.start_time'    => 'required|date_format:H:i',
+            'work_schedules.*.end_time'      => 'required|date_format:H:i|after:work_schedules.*.start_time',
+
+
             // Education, Experience, etc.
             'educations'        => 'nullable|array',
             'educations.*.degree' => 'required|string',

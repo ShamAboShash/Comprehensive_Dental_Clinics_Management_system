@@ -6,11 +6,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use App\Enums\UserRole;
-use App\Models\Dentist;
-use App\Models\Employee;
-use App\Models\Patient;
 use App\Models\User;
-use App\Models\Specialization;
 class UserSeeder extends Seeder
 {
     /**
@@ -18,24 +14,6 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::create([
-        //     'name'     => 'أحمد المدير',
-        //     'email'    => 'admin@clinic.com',
-        //     'phone'    => '0910000001',
-        //     'role'     => UserRole::ADMIN,
-        //     'gender'   => 1,
-        //     'password' => Hash::make('password'),
-        // ]);
-
-        // User::create([
-        //     'name'     => 'شام المديرة',
-        //     'email'    => 'admin2@clinic.com',
-        //     'phone'    => '0915746868',
-        //     'role'     => UserRole::ADMIN,
-        //     'gender'   => 2,
-        //     'password' => Hash::make('password'),
-        // ]);
-
 
 
         $employeesData = [

@@ -35,4 +35,6 @@ class AdminProfileController extends Controller
             'data' => new AdminProfileResource($user)
         ], 200);
     }
+
+    
 }
