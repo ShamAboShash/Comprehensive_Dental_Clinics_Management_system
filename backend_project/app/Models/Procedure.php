@@ -10,7 +10,7 @@ class Procedure extends Model
     'name',
     'name_en',
     'price',
-    'treatment_session_id',
+    // 'treatment_session_id',
 ];
 
     protected $casts = [

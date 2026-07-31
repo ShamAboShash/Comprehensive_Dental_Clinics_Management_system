@@ -11,6 +11,10 @@ use App\Http\Resources\DentistProfileResource;
 use App\Models\Dentist;
 use App\Models\Employee;
 use App\Models\User;
+use App\Models\EmployeeEducation;
+use App\Models\EmployeeExperience;
+use App\Models\EmployeeSkill;
+use App\Models\EmployeeTraining;
 use App\Models\DentistWorkSchedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -77,20 +81,71 @@ class DentistController extends EmployeeController
             // Create related data (education, experience, etc.)
             $this->createRelatedData($employee, $request);
 
-            $user->load([
+            if ($request->work_schedules) {
+            foreach ($request->work_schedules as $schedule) {
+                DentistWorkSchedule::create([
+                    'dentist_id' => $dentist->id,
+                    'day_of_week' => $schedule['day_of_week'],
+                    'start_time'  => $schedule['start_time'],
+                    'end_time'    => $schedule['end_time'],
+                ]);
+            }
+        }
+
+            $dentist->load([
                 'employee.dentist',
                 'employee.educations',
                 'employee.experiences',
                 'employee.trainings',
                 'employee.skills',
-                'employee.workSchedules',
+                'workSchedules',
             ]);
 
             return response()->json([
                 'message' => 'Dentist created successfully',
-                'data'    => new DentistProfileResource($employee)
+                'data'    => new DentistProfileResource($dentist)
             ], 201);
         });
+    }
+
+        public function createRelatedData(Employee $employee, Request $request): void
+    {
+        if ($request->educations) {
+            foreach ($request->educations as $edu) {
+                EmployeeEducation::create([
+                    'employee_id' => $employee->id,
+                    ...$edu
+                ]);
+            }
+        }
+
+        if ($request->experiences) {
+            foreach ($request->experiences as $exp) {
+                EmployeeExperience::create([
+                    'employee_id' => $employee->id,
+                    ...$exp
+                ]);
+            }
+        }
+
+        if ($request->trainings) {
+            foreach ($request->trainings as $training) {
+                EmployeeTraining::create([
+                    'employee_id' => $employee->id,
+                    ...$training
+                ]);
+            }
+        }
+
+        if ($request->skills) {
+            foreach ($request->skills as $skill) {
+                EmployeeSkill::create([
+                    'employee_id' => $employee->id,
+                    'skill_name' => $skill['skill_name']
+                ]);
+            }
+        }
+
     }
 
     /**
@@ -168,88 +223,121 @@ class DentistController extends EmployeeController
             ], 422);
         }
 
-        $user->load([
-            'employee.dentist.specialization',
+        $dentist = $user->employee?->dentist;
+
+        if (!$dentist) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لا يوجد سجل طبيب مرتبط بهذا المستخدم.'
+            ], 404);
+        }
+
+        $dentist->load([
+            'employee.user',
             'employee.educations',
             'employee.experiences',
             'employee.trainings',
             'employee.skills',
+            'specialization',
+            'workSchedules',
         ]);
 
         return response()->json([
             'success' => true,
-            'data'    => new EmployeeResource($user),
-            /// add the dentist treatments count for the week
-            // most treated treatments type for the week
-            // the rank of the dentist for the week
-            //
+            'data'    => new DentistProfileResource($dentist),
         ]);
     }
 
 
-    public function monthlyDentists(Request $request)
-    {
-        Gate::authorize('is-admin');
+public function dentistMonthly(Request $request, Dentist $dentist)
+{
+    Gate::authorize('is-admin');
 
-        $validated = $request->validate([
-            'month' => 'nullable|integer|between:1,12',
-            'year'  => 'nullable|integer|min:2000|max:2099',
-        ]);
+    $validated = $request->validate([
+        'month' => 'nullable|integer|between:1,12',
+        'year'  => 'nullable|integer|min:2000|max:2099',
+    ]);
 
-        $month = $validated['month'] ?? now()->month;
-        $year  = $validated['year'] ?? now()->year;
+    $month = $validated['month'] ?? now()->month;
+    $year  = $validated['year'] ?? now()->year;
 
-        $dentists = Dentist::with([
-            'employee.user:id,name,email,phone',
-            'specialization:id,name,name_en',
-            'employee.attendances' => fn ($q) => $q->whereMonth('date', $month)
-                ->whereYear('date', $year)
-                ->orderBy('date'),
-        ])->get();
+    $dentist->load([
+        'employee.user:id,name,role',
+        'specialization:id,name,name_en',
+        'employee.attendances' => fn ($q) => $q
+            ->whereMonth('date', $month)
+            ->whereYear('date', $year)
+            ->orderBy('date'),
+    ]);
 
-        return response()->json([
-            'success'        => true,
-            'filter'         => ['month' => (int) $month, 'year' => (int) $year],
-            'total_dentists' => $dentists->count(),
-            'data'           => $dentists,
-        ]);
-    }
-
+    return response()->json([
+        'success' => true,
+        'filter'  => [
+            'dentist_id' => $dentist->id,
+            'month'      => (int) $month,
+            'year'       => (int) $year,
+        ],
+        'data' => [
+            'dentist_id'          => $dentist->id,
+            'employee_id'         => $dentist->employee?->id,
+            'name'                => $dentist->employee?->user?->name,
+            'role'                => $dentist->employee?->user?->role?->value,
+            'specialization'      => $dentist->specialization?->name,
+            'specialization_en'   => $dentist->specialization?->name_en,
+            'attendance' => $dentist->employee?->attendances->map(fn ($a) => [
+                'id'        => $a->id,
+                'date'      => $a->date?->toDateString(),
+                'check_in'  => $a->check_in,
+                'check_out' => $a->check_out,
+                'status'    => $a->status,
+                'notes'     => $a->notes,
+            ])->values() ?? [],
+        ],
+    ]);
+}
     public function updateDentistWS(Request $request, DentistWorkSchedule $schedule)
-    {
-        Gate::authorize('is-admin');
+{
+    Gate::authorize('is-admin');
 
-        $validated = $request->validate([
-            'day_of_week' => ['sometimes', 'required', 'string', Rule::in(['saturday','sunday','monday','tuesday','wednesday','thursday','friday'])],
-            'start_time'  => 'sometimes|required|date_format:H:i',
-            'end_time'    => 'sometimes|required|date_format:H:i|after:start_time',
-        ]);
+    $validated = $request->validate([
+        'day_of_week' => [
+            'required',
+            'string',
+            Rule::in(['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday']),
+        ],
+        'start_time' => 'sometimes|required|date_format:H:i',
+        'end_time'   => 'sometimes|required|date_format:H:i|after:start_time',
+    ]);
 
-        $dayOfWeek = $validated['day_of_week'] ?? $schedule->day_of_week;
-        $startTime = $validated['start_time'] ?? $schedule->start_time;
-
-        $exists = DentistWorkSchedule::where('dentist_id', $schedule->dentist_id)
-            ->where('day_of_week', $dayOfWeek)
-            ->where('start_time', $startTime)
-            ->where('id', '!=', $schedule->id)
-            ->exists();
-
-        if ($exists) {
+    // If only end_time is sent, still validate it against the current start_time
+    if (isset($validated['end_time']) && !isset($validated['start_time'])) {
+        if ($validated['end_time'] <= $schedule->start_time) {
             return response()->json([
                 'success' => false,
-                'message' => 'يوجد وردية أخرى تبدأ في نفس الوقت لهذا اليوم للطبيب.',
+                'message' => 'وقت الانتهاء يجب أن يكون بعد وقت البدء.',
             ], 422);
         }
-
-        $schedule->update($validated);
-        $schedule->load('dentist.employee.user:id,name,email');
-
-        return response()->json([
-            'success' => true,
-            'message' => 'تم تعديل جدول دوام الطبيب بنجاح',
-            'data'    => $schedule,
-        ]);
     }
+
+    $schedule->update($validated);
+    $schedule->load('dentist.employee.user:id,name,email');
+
+    return response()->json([
+        'success' => true,
+        'message' => 'تم تعديل جدول دوام الطبيب بنجاح',
+        'data'    => [
+            'id'         => $schedule->id,
+            'dentist_id' => $schedule->dentist_id,
+            'day'        => $schedule->day_of_week,
+            'start_time' => $schedule->start_time,
+            'end_time'   => $schedule->end_time,
+            'dentist'    => [
+                'name'  => $schedule->dentist?->employee?->user?->name,
+                'email' => $schedule->dentist?->employee?->user?->email,
+            ],
+        ],
+    ]);
+}
 
     public function bySpecialization(Request $request, $specializationId = null)
     {

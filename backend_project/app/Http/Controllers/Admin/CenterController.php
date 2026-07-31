@@ -202,18 +202,21 @@ class CenterController extends Controller
 
         $validated = $request->validate([
             'status'         => 'sometimes|required|string|in:pending,in_review,resolved,rejected',
-            'priority'       => 'sometimes|required|string|in:low,medium,high',
             'admin_response' => 'nullable|string',
         ]);
 
         $complaint->update($validated);
         $complaint->load(['patient.user:id,name,email,phone', 'submittedBy:id,name,email,phone,role']);
 
+        $message = $validated['status'] === 'resolved'
+        ? 'تم حل الشكوى بنجاح'
+        : 'تم رفض الشكوى';
+
         return response()->json([
             'success' => true,
-            'message' => 'تم تحديث الشكوى والرد عليها بنجاح',
+            'message' => $message,
             'data'    => new ComplaintResource($complaint),
         ]);
-    }
+        }
 
 }

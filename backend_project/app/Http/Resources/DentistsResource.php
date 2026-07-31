@@ -21,6 +21,7 @@ class DentistsResource extends JsonResource
             'specialization_name_en' => $this->employee?->dentist?->specialization?->name_en,
             'profile_picture'        => $this->profile_picture_url,
             'is_active'              => (bool) $this->is_active,
+            'patients_count'         => (int) ($this->patients_count ?? 0),
         ];
     }
 }

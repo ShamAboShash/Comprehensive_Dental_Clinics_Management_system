@@ -273,7 +273,7 @@ class EmployeeController extends Controller
             'user',
             'allergies',
             'chronicDiseases.category',      // if you have category relation
-            'medications.medication'         // adjust if your relation name is different
+            'medications'        // adjust if your relation name is different
         ])->findOrFail($patientId);
 
         // Authorization using Gate

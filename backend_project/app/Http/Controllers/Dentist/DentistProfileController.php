@@ -168,7 +168,7 @@ public function editProfile(UpdateDentistProfileRequest $request)
 
 
 
- public function showAllDentists(Request $request)
+    public function showAllDentists(Request $request)
     {
         if (!Gate::allows('manage-employees')) {
             return response()->json([
@@ -178,14 +178,29 @@ public function editProfile(UpdateDentistProfileRequest $request)
         }
 
         $dentists = User::where('role', UserRole::DENTIST->value)
+            ->whereHas('employee.dentist')
             ->with([
                 'employee.dentist.specialization',
-
             ])
             ->get();
 
+        // One query: count distinct patients per dentist
+        $patientCounts = \App\Models\Treatment::query()
+            ->selectRaw('dentist_id, COUNT(DISTINCT patient_id) as patients_count')
+            ->groupBy('dentist_id')
+            ->pluck('patients_count', 'dentist_id');
+
+        // Attach count to each dentist
+        $dentists->each(function ($user) use ($patientCounts) {
+            $dentistId = $user->employee?->dentist?->id;
+            $user->patients_count = $dentistId
+                ? (int) ($patientCounts[$dentistId] ?? 0)
+                : 0;
+        });
+
         return response()->json([
             'success' => true,
+            'count'   => $dentists->count(),
             'data'    => DentistsResource::collection($dentists),
         ]);
     }

@@ -51,4 +51,9 @@ public function clinics()
     return $this->belongsToMany(Clinic::class, 'dentist_clinics');
 }
 
+public function treatments()
+{
+    return $this->hasMany(Treatment::class);
+}
+
 }

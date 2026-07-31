@@ -196,8 +196,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'active'])->group(function (
     Route::post('/createDentist',                    [DentistController::class,      'createDentist']);
     Route::post('/updateDentist/{user}',             [DentistController::class,      'updateDentist']);
     Route::get('/showDentistDetails/{user}',         [DentistController::class,      'showDentistDetails']);
-    Route::post('/attendance/dentists',           [DentistController::class, 'monthlyDentists']);
-    Route::post('/dentist-schedules/{schedule}',  [DentistController::class, 'updateDentistWS']);
+    Route::get('/dentistMonthlyAttendance/{dentist}',           [DentistController::class, 'dentistMonthly']);
+    Route::post('/updateDentistWorkSchedule/{schedule}',  [DentistController::class, 'updateDentistWS']);
     Route::get('/showDentistBySpecialization/{specializationId}', [DentistController::class, 'bySpecialization']);
     //center info
     Route::get('/warehouseInventory',            [CenterController::class, 'getWarehouseInventory']);
@@ -228,7 +228,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'active'])->group(function (
     Route::post('/updateProcedure/{procedure}',        [OpirationsController::class, 'procedureUpdate']);
     Route::post('/deleteProcedure/{procedure}', [OpirationsController::class, 'procedureDestroy']);
     // Complaints
-    Route::post('/showComplaints',                    [CenterController::class, 'complaintIndex']);
+    Route::get('/showComplaints',                    [CenterController::class, 'complaintIndex']);
     Route::post('/updateComplaintStatus/{complaint}',        [CenterController::class, 'complaintUpdate']);
     // Center info
     Route::post('/updateCenterInfo',                 [CenterController::class, 'updateCenterInfo']);
