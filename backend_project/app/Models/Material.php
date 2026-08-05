@@ -14,6 +14,7 @@ class Material extends Model
         'dosage',
         'unit',
         'category',
+        'is_active',
     ];
 
     public function warehouseStocks()
@@ -27,8 +28,13 @@ class Material extends Model
     }
 
 
-public function materialRequestItems()
-{
-    return $this->hasMany(MaterialRequestItem::class);
-}
+    public function materialRequestItems()
+    {
+        return $this->hasMany(MaterialRequestItem::class);
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
 }

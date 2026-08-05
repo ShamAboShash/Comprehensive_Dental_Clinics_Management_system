@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('dosage')->nullable();
             $table->string('unit');                    // قطعة، علبة، كغ، لتر ...
             $table->enum('category', ['clinic', 'lab', 'both'])->default('both');
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

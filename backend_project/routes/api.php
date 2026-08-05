@@ -54,7 +54,7 @@ use App\Http\Controllers\LabManager\WarehouseMaterialController;
 
 use App\Http\Controllers\WarehouseManager\MaterialController;
 use App\Http\Controllers\WarehouseManager\WarehouseStockController;
-use App\Http\Controllers\WarehouseManager\WarehouseMaterialRequestController;
+use App\Http\Controllers\WarehouseManager\MaterialRequestController as WarehouseMaterialRequestController;
 use App\Http\Controllers\WarehouseManager\PurchaseInvoiceController;
 use App\Http\Controllers\WarehouseManager\InventoryController;
 use App\Http\Controllers\WarehouseManager\ReportController;
@@ -368,43 +368,46 @@ Route::prefix('labManager')->middleware(['auth:sanctum', 'active'])->group(funct
 
 // ====================== WAREHOUSE MANAGER ======================
 
-// Route::prefix('warehouseManager')->middleware(['auth:sanctum', 'active'])->group(function () {
+Route::prefix('warehouseManager')->middleware(['auth:sanctum', 'active'])->group(function () {
 
-//     // Materials
-//     Route::apiResource('materials', MaterialController::class);
+    // Materials
+Route::get('showALLMaterials',          [MaterialController::class, 'index']);
+    Route::get('showMaterialDetails/{id}',     [MaterialController::class, 'show']);
+    Route::post('addMaterial',         [MaterialController::class, 'store']);
+    Route::post('updateMaterial/{id}',   [MaterialController::class, 'update']);
+    Route::delete('materials/{id}',  [MaterialController::class, 'destroy']);
+    // Stock
+    Route::get('stock/logs',     [WarehouseStockController::class, 'logs']);
+    Route::post('stock/{id}',    [WarehouseStockController::class, 'adjust']);
+    Route::apiResource('stock',  WarehouseStockController::class)->only(['index', 'show']);
 
-//     // Stock
-//     Route::get('stock/logs',     [WarehouseStockController::class, 'logs']);
-//     Route::post('stock/{id}',    [WarehouseStockController::class, 'adjust']);
-//     Route::apiResource('stock',  WarehouseStockController::class)->only(['index', 'show']);
+    // Material Requests
+    Route::get('material-requests',                  [WarehouseMaterialRequestController::class, 'index']);
+    Route::get('material-requests/{id}',             [WarehouseMaterialRequestController::class, 'show']);
+    Route::patch('material-requests/{id}/fulfill',   [WarehouseMaterialRequestController::class, 'fulfill']);
+    Route::patch('material-requests/{id}/reject',    [WarehouseMaterialRequestController::class, 'reject']);
 
-//     // Material Requests
-//     Route::get('material-requests',                  [WarehouseMaterialRequestController::class, 'index']);
-//     Route::get('material-requests/{id}',             [WarehouseMaterialRequestController::class, 'show']);
-//     Route::patch('material-requests/{id}/fulfill',   [WarehouseMaterialRequestController::class, 'fulfill']);
-//     Route::patch('material-requests/{id}/reject',    [WarehouseMaterialRequestController::class, 'reject']);
+    // Purchase Invoices
+    Route::apiResource('purchase-invoices', PurchaseInvoiceController::class)->only(['index', 'show', 'store']);
 
-//     // Purchase Invoices
-//     Route::apiResource('purchase-invoices', PurchaseInvoiceController::class)->only(['index', 'show', 'store']);
+    // Inventory
+    Route::prefix('inventory')->group(function () {
+        Route::get('stock-levels', [InventoryController::class, 'stockLevels']);
+        Route::get('stock-value',  [InventoryController::class, 'stockValue']);
+        Route::get('by-category',  [InventoryController::class, 'byCategory']);
+    });
 
-//     // Inventory
-//     Route::prefix('inventory')->group(function () {
-//         Route::get('stock-levels', [InventoryController::class, 'stockLevels']);
-//         Route::get('stock-value',  [InventoryController::class, 'stockValue']);
-//         Route::get('by-category',  [InventoryController::class, 'byCategory']);
-//     });
+    // Reports
+    Route::prefix('reports')->group(function () {
+        Route::get('stock-movement',    [ReportController::class, 'stockMovement']);
+        Route::get('purchase-invoices', [ReportController::class, 'purchaseInvoices']);
+        Route::get('material-requests', [ReportController::class, 'materialRequests']);
+    });
 
-//     // Reports
-//     Route::prefix('reports')->group(function () {
-//         Route::get('stock-movement',    [ReportController::class, 'stockMovement']);
-//         Route::get('purchase-invoices', [ReportController::class, 'purchaseInvoices']);
-//         Route::get('material-requests', [ReportController::class, 'materialRequests']);
-//     });
+    // Notifications
+    Route::get('notifications',              [NotificationController::class, 'index']);
+    Route::patch('notifications/{id}/read',  [NotificationController::class, 'markAsRead']);
 
-//     // Notifications
-//     Route::get('notifications',              [NotificationController::class, 'index']);
-//     Route::patch('notifications/{id}/read',  [NotificationController::class, 'markAsRead']);
-
-// });
+});
 
 

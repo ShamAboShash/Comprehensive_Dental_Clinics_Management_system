@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Controllers\Warehouse;
+namespace App\Http\Controllers\WarehouseManager;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Warehouse\StoreMaterialRequest;
-use App\Http\Requests\Warehouse\UpdateMaterialRequest;
+use App\Http\Requests\WarehouseManager\StoreMaterialRequest;
+use App\Http\Requests\WarehouseManager\UpdateMaterialRequest;
 use App\Models\Material;
 use App\Models\WarehouseStock;
 use Illuminate\Support\Facades\Gate;
@@ -17,10 +17,11 @@ class MaterialController extends Controller
         Gate::authorize('is-warehouse-manager');
     }
 
-    // GET /warehouse/materials
+    // GET /warehouseManager/materials
     public function index()
     {
-        $materials = Material::orderBy('name')
+        $materials = Material::with('warehouseStocks')
+            ->orderBy('name')
             ->get()
             ->map(fn($material) => $this->formatMaterial($material));
 
@@ -30,10 +31,10 @@ class MaterialController extends Controller
         ]);
     }
 
-    // GET /warehouse/materials/{id}
+    // GET /warehouseManager/materials/{id}
     public function show($id)
     {
-        $material = Material::find($id);
+        $material = Material::with('warehouseStocks')->find($id);
 
         if (!$material) {
             return response()->json([
@@ -48,7 +49,7 @@ class MaterialController extends Controller
         ]);
     }
 
-    // POST /warehouse/materials
+    // POST /warehouseManager/materials
     public function store(StoreMaterialRequest $request)
     {
         DB::beginTransaction();
@@ -56,13 +57,15 @@ class MaterialController extends Controller
         try {
             $material = Material::create($request->validated());
 
-            // Auto-create a warehouse stock entry with 0 quantity
+            // Auto-create empty stock batch
             WarehouseStock::create([
                 'material_id' => $material->id,
                 'quantity'    => 0,
             ]);
 
             DB::commit();
+
+            $material->load('warehouseStocks');
 
             return response()->json([
                 'success' => true,
@@ -80,7 +83,7 @@ class MaterialController extends Controller
         }
     }
 
-    // PATCH /warehouse/materials/{id}
+    // PATCH /warehouseManager/materials/{id}
     public function update(UpdateMaterialRequest $request, $id)
     {
         $material = Material::find($id);
@@ -93,15 +96,16 @@ class MaterialController extends Controller
         }
 
         $material->update($request->validated());
+        $material->load('warehouseStocks');
 
         return response()->json([
             'success' => true,
             'message' => 'تم تحديث المادة بنجاح',
-            'data'    => $this->formatMaterial($material->fresh()),
+            'data'    => $this->formatMaterial($material),
         ]);
     }
 
-    // DELETE /warehouse/materials/{id}
+    // DELETE /warehouseManager/materials/{id}
     public function destroy($id)
     {
         $material = Material::find($id);
@@ -113,7 +117,7 @@ class MaterialController extends Controller
             ], 404);
         }
 
-        // Prevent deletion if material has stock movements
+        // Prevent deletion if still has stock
         if ($material->warehouseStocks()->where('quantity', '>', 0)->exists()) {
             return response()->json([
                 'success' => false,
@@ -121,7 +125,7 @@ class MaterialController extends Controller
             ], 422);
         }
 
-        // Prevent deletion if material is used in any request
+        // Prevent deletion if used in any request
         if ($material->materialRequestItems()->exists()) {
             return response()->json([
                 'success' => false,
@@ -140,15 +144,18 @@ class MaterialController extends Controller
     // ─── Private Helper ───────────────────────────────────────────
 
     private function formatMaterial(Material $material): array
-{
-    return [
-        'id'           => $material->id,
-        'name'         => $material->name,
-        'unit'         => $material->unit,
-        'price'        => $material->price,
-        'description'  => $material->description,
-        'total_stock'  => $material->warehouseStocks->sum('quantity'),
-        'batches_count'=> $material->warehouseStocks->count(),
-    ];
-}
+    {
+        return [
+            'id'            => $material->id,
+            'name'          => $material->name,
+            'name_en'       => $material->name_en,
+            'company_name'  => $material->company_name,
+            'price_per_unit'=> $material->price_per_unit,
+            'dosage'        => $material->dosage,
+            'unit'          => $material->unit,
+            'category'      => $material->category,
+            'total_stock'   => $material->warehouseStocks->sum('quantity'),
+            'batches_count' => $material->warehouseStocks->count(),
+        ];
+    }
 }

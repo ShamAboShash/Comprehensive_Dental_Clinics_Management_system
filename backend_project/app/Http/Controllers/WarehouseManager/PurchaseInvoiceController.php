@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Warehouse;
+namespace App\Http\Controllers\WarehouseManager;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Warehouse\StorePurchaseInvoiceRequest;

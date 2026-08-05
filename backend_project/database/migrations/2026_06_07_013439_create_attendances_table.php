@@ -28,6 +28,7 @@ return new class extends Migration
             $table->enum('status', [
                 'present',
                 'absent',
+                'on_leave',
             ])->default('present');
 
             $table->text('notes')->nullable();
