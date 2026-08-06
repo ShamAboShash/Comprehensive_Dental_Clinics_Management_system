@@ -27,7 +27,7 @@ class ComplaintSeeder extends Seeder
             [
                 'title'       => 'سوء تعامل من الاستقبال',
                 'description' => 'واجهت أسلوب تعامل غير لائق من موظف الاستقبال عند الحجز.',
-                'status'      => 'in_review',
+                'status'      => 'pending',
                 'priority'    => 'high',
             ],
             [

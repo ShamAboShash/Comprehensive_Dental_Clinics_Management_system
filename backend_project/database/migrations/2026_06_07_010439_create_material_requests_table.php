@@ -23,13 +23,12 @@ return new class extends Migration
                 ->onDelete('set null');
 
             $table->enum('status', [
-                'pending',
-                'processing',
-                'fulfilled',
-                'partially_fulfilled',
-                'not_available',
+                'new',
+                'in_progress',
+                'completed',
+                'rejected',
                 'cancelled',
-            ])->default('pending');
+            ])->default('new');
 
             $table->text('notes')->nullable();
             $table->text('warehouse_notes')->nullable();

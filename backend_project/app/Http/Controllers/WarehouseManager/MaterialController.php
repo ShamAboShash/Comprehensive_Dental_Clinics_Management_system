@@ -7,6 +7,7 @@ use App\Http\Requests\WarehouseManager\StoreMaterialRequest;
 use App\Http\Requests\WarehouseManager\UpdateMaterialRequest;
 use App\Models\Material;
 use App\Models\WarehouseStock;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
 
@@ -21,6 +22,7 @@ class MaterialController extends Controller
     public function index()
     {
         $materials = Material::with('warehouseStocks')
+            ->where('is_active', true)
             ->orderBy('name')
             ->get()
             ->map(fn($material) => $this->formatMaterial($material));
@@ -105,9 +107,16 @@ class MaterialController extends Controller
         ]);
     }
 
-    // DELETE /warehouseManager/materials/{id}
-    public function destroy($id)
+    // PATCH /warehouseManager/materials/{id}/status
+    public function updateStatus(Request $request, $id)
     {
+        $request->validate([
+            'is_active' => 'required|boolean',
+        ], [
+            'is_active.required' => 'حالة التفعيل مطلوبة',
+            'is_active.boolean'  => 'حالة التفعيل يجب أن تكون true أو false',
+        ]);
+
         $material = Material::find($id);
 
         if (!$material) {
@@ -117,29 +126,59 @@ class MaterialController extends Controller
             ], 404);
         }
 
-        // Prevent deletion if still has stock
-        if ($material->warehouseStocks()->where('quantity', '>', 0)->exists()) {
+        // Optional safety: cannot deactivate if still has stock
+        if ($request->is_active === false && $material->warehouseStocks()->where('quantity', '>', 0)->exists()) {
             return response()->json([
                 'success' => false,
-                'message' => 'لا يمكن حذف مادة لا تزال موجودة في المخزن',
+                'message' => 'لا يمكن إلغاء تفعيل مادة لا تزال موجودة في المخزن. قم بتصفير الكمية أولاً',
             ], 422);
         }
 
-        // Prevent deletion if used in any request
-        if ($material->materialRequestItems()->exists()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'لا يمكن حذف مادة مرتبطة بطلبات سابقة',
-            ], 422);
-        }
-
-        $material->delete();
+        $material->update(['is_active' => $request->is_active]);
 
         return response()->json([
             'success' => true,
-            'message' => 'تم حذف المادة بنجاح',
+            'message' => $request->is_active ? 'تم تفعيل المادة بنجاح' : 'تم إلغاء تفعيل المادة بنجاح',
+            'data'    => $this->formatMaterial($material->fresh('warehouseStocks')),
         ]);
     }
+
+
+    // DELETE /warehouseManager/materials/{id}
+    // public function destroy($id)
+    // {
+    //     $material = Material::find($id);
+
+    //     if (!$material) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'المادة غير موجودة',
+    //         ], 404);
+    //     }
+
+    //     // Prevent deletion if still has stock
+    //     if ($material->warehouseStocks()->where('quantity', '>', 0)->exists()) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'لا يمكن حذف مادة لا تزال موجودة في المخزن',
+    //         ], 422);
+    //     }
+
+    //     // Prevent deletion if used in any request
+    //     if ($material->materialRequestItems()->exists()) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'لا يمكن حذف مادة مرتبطة بطلبات سابقة',
+    //         ], 422);
+    //     }
+
+    //     $material->delete();
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'تم حذف المادة بنجاح',
+    //     ]);
+    // }
 
     // ─── Private Helper ───────────────────────────────────────────
 

@@ -371,21 +371,23 @@ Route::prefix('labManager')->middleware(['auth:sanctum', 'active'])->group(funct
 Route::prefix('warehouseManager')->middleware(['auth:sanctum', 'active'])->group(function () {
 
     // Materials
-Route::get('showALLMaterials',          [MaterialController::class, 'index']);
+    Route::get('showALLMaterials',          [MaterialController::class, 'index']);
     Route::get('showMaterialDetails/{id}',     [MaterialController::class, 'show']);
     Route::post('addMaterial',         [MaterialController::class, 'store']);
     Route::post('updateMaterial/{id}',   [MaterialController::class, 'update']);
-    Route::delete('materials/{id}',  [MaterialController::class, 'destroy']);
+    Route::post('updateStatus/{id}',   [MaterialController::class, 'updateStatus']);
+
+    // Route::delete('materials/{id}',  [MaterialController::class, 'destroy']);
     // Stock
     Route::get('stock/logs',     [WarehouseStockController::class, 'logs']);
     Route::post('stock/{id}',    [WarehouseStockController::class, 'adjust']);
     Route::apiResource('stock',  WarehouseStockController::class)->only(['index', 'show']);
 
     // Material Requests
-    Route::get('material-requests',                  [WarehouseMaterialRequestController::class, 'index']);
-    Route::get('material-requests/{id}',             [WarehouseMaterialRequestController::class, 'show']);
-    Route::patch('material-requests/{id}/fulfill',   [WarehouseMaterialRequestController::class, 'fulfill']);
-    Route::patch('material-requests/{id}/reject',    [WarehouseMaterialRequestController::class, 'reject']);
+    Route::get('showAllMaterialRequests',                  [WarehouseMaterialRequestController::class, 'index']);
+    Route::get('showMaterialRequestDetails/{id}',             [WarehouseMaterialRequestController::class, 'show']);
+    Route::post('materialRequestFulfill/{id}',   [WarehouseMaterialRequestController::class, 'fulfill']);
+    Route::post('materialRequestReject/{id}',    [WarehouseMaterialRequestController::class, 'reject']);
 
     // Purchase Invoices
     Route::apiResource('purchase-invoices', PurchaseInvoiceController::class)->only(['index', 'show', 'store']);

@@ -45,6 +45,7 @@ class DatabaseSeeder extends Seeder
             MaterialSeeder::class,
             WarehouseStockSeeder::class,
             LabStockSeeder::class,
+            MaterialRequestSeeder::class,  
             DrugInteractionSeeder::class,
             CenterInfoSeeder::class,
             ComplaintSeeder::class,

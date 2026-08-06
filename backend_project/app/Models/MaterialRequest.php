@@ -45,6 +45,11 @@ class MaterialRequest extends Model
 
 public function fulfillments()
 {
-    return $this->hasMany(WarehouseFulfillment::class);
+    return $this->hasManyThrough(
+        WarehouseFulfillment::class,
+        MaterialRequestItem::class,
+        'material_request_id',      // FK on material_request_items
+        'material_request_item_id'  // FK on warehouse_fulfillments
+    );
 }
 }

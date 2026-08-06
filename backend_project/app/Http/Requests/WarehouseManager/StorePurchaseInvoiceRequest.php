@@ -1,7 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Warehouse;
-
+namespace App\Http\Requests\WarehouseManager;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StorePurchaseInvoiceRequest extends FormRequest
