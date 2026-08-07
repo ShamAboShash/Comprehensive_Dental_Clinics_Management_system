@@ -376,12 +376,14 @@ Route::prefix('warehouseManager')->middleware(['auth:sanctum', 'active'])->group
     Route::post('addMaterial',         [MaterialController::class, 'store']);
     Route::post('updateMaterial/{id}',   [MaterialController::class, 'update']);
     Route::post('updateStatus/{id}',   [MaterialController::class, 'updateStatus']);
-
     // Route::delete('materials/{id}',  [MaterialController::class, 'destroy']);
+
     // Stock
-    Route::get('stock/logs',     [WarehouseStockController::class, 'logs']);
-    Route::post('stock/{id}',    [WarehouseStockController::class, 'adjust']);
-    Route::apiResource('stock',  WarehouseStockController::class)->only(['index', 'show']);
+    Route::get('showAllStock',              [WarehouseStockController::class, 'index']);
+    Route::get('showStockLogs',         [WarehouseStockController::class, 'logs']);
+    Route::get('showStockDetails/{id}',         [WarehouseStockController::class, 'show']);
+    Route::post('adjustStockQuantity/{id}', [WarehouseStockController::class, 'adjust']);
+    Route::post('addStockBatch', [WarehouseStockController::class, 'storeBatch']);
 
     // Material Requests
     Route::get('showAllMaterialRequests',                  [WarehouseMaterialRequestController::class, 'index']);

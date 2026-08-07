@@ -13,7 +13,7 @@ class AppointmentResource extends JsonResource
             'id'               => $this->id,
             'dentist' => $this->whenLoaded('dentist', function () {
                 return [
-                    // 'id'    => $this->dentist->id,
+                    'id'    => $this->dentist->id,
                     'name'  => $this->dentist->employee?->user?->name,
                     'photo' => $this->dentist->employee?->user?->profile_picture_url
                             ?? $this->dentist->employee?->user?->profile_picture,
