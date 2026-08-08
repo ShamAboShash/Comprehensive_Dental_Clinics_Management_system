@@ -3,13 +3,14 @@
 namespace App\Http\Controllers\WarehouseManager;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Warehouse\StorePurchaseInvoiceRequest;
+use App\Http\Requests\WarehouseManager\StorePurchaseInvoiceRequest;
 use App\Models\PurchaseInvoice;
 use App\Models\PurchaseInvoiceItem;
 use App\Models\WarehouseStock;
 use App\Models\WarehouseStockLog;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 
 class PurchaseInvoiceController extends Controller
 {
@@ -18,10 +19,10 @@ class PurchaseInvoiceController extends Controller
         Gate::authorize('is-warehouse-manager');
     }
 
-    // GET /warehouse/purchase-invoices
+    // GET /warehouseManager/purchase-invoices
     public function index()
     {
-        $invoices = PurchaseInvoice::with('items.material')
+        $invoices = PurchaseInvoice::with(['createdBy'])
             ->orderBy('invoice_date', 'desc')
             ->get()
             ->map(fn($invoice) => $this->formatInvoice($invoice));
@@ -32,10 +33,10 @@ class PurchaseInvoiceController extends Controller
         ]);
     }
 
-    // GET /warehouse/purchase-invoices/{id}
+    // GET /warehouseManager/purchase-invoices/{id}
     public function show($id)
     {
-        $invoice = PurchaseInvoice::with('items.material')->find($id);
+        $invoice = PurchaseInvoice::with(['items.material', 'createdBy'])->find($id);
 
         if (!$invoice) {
             return response()->json([
@@ -50,18 +51,16 @@ class PurchaseInvoiceController extends Controller
         ]);
     }
 
-    // POST /warehouse/purchase-invoices
+    // POST /warehouseManager/purchase-invoices
     public function store(StorePurchaseInvoiceRequest $request)
     {
         DB::beginTransaction();
 
         try {
-            // Calculate total amount
             $totalAmount = collect($request->items)->sum(
                 fn($item) => $item['quantity'] * $item['unit_price']
             );
 
-            // Create invoice header
             $invoice = PurchaseInvoice::create([
                 'supplier_name' => $request->supplier_name,
                 'invoice_date'  => $request->invoice_date,
@@ -70,36 +69,43 @@ class PurchaseInvoiceController extends Controller
                 'created_by'    => $request->user()->id,
             ]);
 
-            // Create items + update stock
             foreach ($request->items as $item) {
-    PurchaseInvoiceItem::create([
-        'purchase_invoice_id' => $invoice->id,
-        'material_id'         => $item['material_id'],
-        'quantity'            => $item['quantity'],
-        'unit_price'          => $item['unit_price'],
-        'total_price'         => $item['quantity'] * $item['unit_price'],
-    ]);
+                // 1) Invoice item
+                PurchaseInvoiceItem::create([
+                    'purchase_invoice_id' => $invoice->id,
+                    'material_id'         => $item['material_id'],
+                    'quantity'            => $item['quantity'],
+                    'unit_price'          => $item['unit_price'],
+                    'total_price'         => $item['quantity'] * $item['unit_price'],
+                ]);
 
-    // Always create a new batch row with its own expiration date
-    $stock = WarehouseStock::create([
-        'material_id'     => $item['material_id'],
-        'quantity'        => $item['quantity'],
-        'expiration_date' => $item['expiration_date'] ?? null,
-    ]);
+                // 2) New stock batch
+                $stock = WarehouseStock::create([
+                    'material_id'     => $item['material_id'],
+                    'quantity'        => $item['quantity'],
+                    'expiration_date' => $item['expiration_date'] ?? null,
+                ]);
 
-    // Log the movement
-    WarehouseStockLog::create([
-        'warehouse_stock_id' => $stock->id,
-        'quantity'           => $item['quantity'],
-        'reason'             => "فاتورة شراء #{$invoice->id} — {$request->supplier_name}",
-    ]);
-}
+                // 3) Stock log
+                WarehouseStockLog::create([
+                    'material_id'        => $item['material_id'],
+                    'warehouse_stock_id' => $stock->id,
+                    'type'               => 'in',
+                    'quantity'           => $item['quantity'],
+                    'reason'             => 'purchase',
+                    'notes'              => "فاتورة شراء #{$invoice->id} — {$request->supplier_name}",
+                    'done_by'            => $request->user()->id,
+                ]);
+            }
+
             DB::commit();
+
+            $invoice->load(['items.material', 'createdBy']);
 
             return response()->json([
                 'success' => true,
                 'message' => 'تم إنشاء فاتورة الشراء وتحديث المخزون بنجاح',
-                'data'    => $this->formatInvoice($invoice->fresh('items.material')),
+                'data'    => $this->formatInvoice($invoice),
             ], 201);
 
         } catch (\Exception $e) {
@@ -108,9 +114,42 @@ class PurchaseInvoiceController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'حدث خطأ أثناء إنشاء الفاتورة',
+                // 'error'   => $e->getMessage(), // enable while debugging
             ], 500);
         }
     }
+
+    // PATCH /warehouseManager/purchase-invoices/{id}
+public function update(Request $request, $id)
+{
+    $request->validate([
+        'supplier_name' => 'sometimes|string|max:255',
+        'invoice_date'  => 'sometimes|date',
+        'notes'         => 'nullable|string|max:500',
+    ], [
+        'supplier_name.string' => 'اسم المورد غير صالح',
+        'invoice_date.date'    => 'تاريخ الفاتورة غير صالح',
+    ]);
+
+    $invoice = PurchaseInvoice::find($id);
+
+    if (!$invoice) {
+        return response()->json([
+            'success' => false,
+            'message' => 'الفاتورة غير موجودة',
+        ], 404);
+    }
+
+    $invoice->update($request->only(['supplier_name', 'invoice_date', 'notes']));
+
+    $invoice->load(['items.material', 'createdBy']);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'تم تحديث الفاتورة بنجاح',
+        'data'    => $this->formatInvoice($invoice),
+    ]);
+}
 
     // ─── Private Helper ───────────────────────────────────────────
 
@@ -119,19 +158,22 @@ class PurchaseInvoiceController extends Controller
         return [
             'id'            => $invoice->id,
             'supplier_name' => $invoice->supplier_name,
-            'invoice_date'  => $invoice->invoice_date,
+            'invoice_date'  => $invoice->invoice_date
+                ? $invoice->invoice_date->format('Y-m-d')
+                : null,
             'total_amount'  => $invoice->total_amount,
             'notes'         => $invoice->notes,
             'created_by'    => $invoice->createdBy->name ?? null,
             'items'         => $invoice->items->map(fn($item) => [
                 'id'          => $item->id,
+                'material_id' => $item->material_id,
                 'material'    => $item->material->name ?? null,
                 'unit'        => $item->material->unit ?? null,
                 'quantity'    => $item->quantity,
                 'unit_price'  => $item->unit_price,
                 'total_price' => $item->total_price,
-            ]),
-            'created_at' => $invoice->created_at->toDateTimeString(),
+            ])->values(),
+            'created_at'    => $invoice->created_at?->toDateTimeString(),
         ];
     }
 }

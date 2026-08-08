@@ -54,7 +54,7 @@ class WarehouseStockController extends Controller
 // List materials with total stock
     public function index()
     {
-        $materials = \App\Models\Material::with('warehouseStocks')
+        $materials = Material::with('warehouseStocks')
             ->orderBy('name')
             ->get()
             ->map(function ($material) {

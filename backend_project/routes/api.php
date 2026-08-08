@@ -383,7 +383,7 @@ Route::prefix('warehouseManager')->middleware(['auth:sanctum', 'active'])->group
     Route::get('showStockLogs',         [WarehouseStockController::class, 'logs']);
     Route::get('showStockDetails/{id}',         [WarehouseStockController::class, 'show']);
     Route::post('adjustStockQuantity/{id}', [WarehouseStockController::class, 'adjust']);
-    Route::post('addStockBatch', [WarehouseStockController::class, 'storeBatch']);
+    // Route::post('addStockBatch', [WarehouseStockController::class, 'storeBatch']);
 
     // Material Requests
     Route::get('showAllMaterialRequests',                  [WarehouseMaterialRequestController::class, 'index']);
@@ -392,21 +392,20 @@ Route::prefix('warehouseManager')->middleware(['auth:sanctum', 'active'])->group
     Route::post('materialRequestReject/{id}',    [WarehouseMaterialRequestController::class, 'reject']);
 
     // Purchase Invoices
-    Route::apiResource('purchase-invoices', PurchaseInvoiceController::class)->only(['index', 'show', 'store']);
+    Route::get('showAllPurchaseInvoices',       [PurchaseInvoiceController::class, 'index']);
+    Route::get('showPurchaseInvoiceDetails/{id}',  [PurchaseInvoiceController::class, 'show']);
+    Route::post('addPurchaseInvoice',      [PurchaseInvoiceController::class, 'store']);
+    Route::post('updatePurchaseInvoice/{id}', [PurchaseInvoiceController::class, 'update']);
 
     // Inventory
-    Route::prefix('inventory')->group(function () {
-        Route::get('stock-levels', [InventoryController::class, 'stockLevels']);
-        Route::get('stock-value',  [InventoryController::class, 'stockValue']);
-        Route::get('by-category',  [InventoryController::class, 'byCategory']);
-    });
+    Route::get('mostRequestedMaterials', [InventoryController::class, 'mostRequested']);
+    Route::get('expiringSoonMaterials',  [InventoryController::class, 'expiringSoon']);
+    Route::get('lowStockMaterials',      [InventoryController::class, 'lowStock']);
 
     // Reports
-    Route::prefix('reports')->group(function () {
-        Route::get('stock-movement',    [ReportController::class, 'stockMovement']);
-        Route::get('purchase-invoices', [ReportController::class, 'purchaseInvoices']);
-        Route::get('material-requests', [ReportController::class, 'materialRequests']);
-    });
+    Route::get('stock-movement',    [ReportController::class, 'stockMovement']);
+    Route::get('purchase-invoices', [ReportController::class, 'purchaseInvoices']);
+    Route::get('material-requests', [ReportController::class, 'materialRequests']);
 
     // Notifications
     Route::get('notifications',              [NotificationController::class, 'index']);
