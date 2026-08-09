@@ -75,7 +75,7 @@ class MaterialRequestController extends Controller
                 'requester_type' => 'clinic',
                 'clinic_id'      => $request->clinic_id,   // from body (nullable)
                 'notes'          => $request->notes,
-                'status'         => 'pending',
+                'status'         => 'new',
             ]);
 
             if ($request->filled('items')) {
@@ -141,7 +141,7 @@ class MaterialRequestController extends Controller
             ], 404);
         }
 
-        if ($materialRequest->status !== 'pending') {
+        if ($materialRequest->status !== 'new') {
             return response()->json([
                 'success' => false,
                 'message' => 'لا يمكن تعديل الطلب بعد بدء معالجته.',
@@ -223,7 +223,7 @@ class MaterialRequestController extends Controller
             ], 404);
         }
 
-        if ($materialRequest->status !== 'pending') {
+        if ($materialRequest->status !== 'new') {
             return response()->json([
                 'success' => false,
                 'message' => 'لا يمكن إلغاء الطلب بعد معالجته.',
@@ -254,7 +254,7 @@ class MaterialRequestController extends Controller
             ], 404);
         }
 
-        if ($materialRequest->status !== 'pending') {
+        if ($materialRequest->status !== 'new') {
             return response()->json([
                 'success' => false,
                 'message' => 'لا يمكن تغيير حالة الطلب بعد بدء معالجته من المستودع.',

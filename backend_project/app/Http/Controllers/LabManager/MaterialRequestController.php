@@ -68,7 +68,7 @@ class MaterialRequestController extends Controller
                 'requested_by'   => $request->user()->id,
                 'requester_type' => 'lab',
                 'notes'          => $request->notes,
-                'status'         => 'pending',
+                'status'         => 'new',
             ]);
 
             // Existing materials
@@ -145,7 +145,7 @@ class MaterialRequestController extends Controller
             ], 404);
         }
 
-        if ($materialRequest->status !== 'pending') {
+        if ($materialRequest->status !== 'new') {
             return response()->json([
                 'success' => false,
                 'message' => 'لا يمكن إلغاء الطلب بعد معالجته',
