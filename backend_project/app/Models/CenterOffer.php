@@ -13,6 +13,7 @@ class CenterOffer extends Model
         'start_date',
         'end_date',
         'conditions',
+        'discount_percentage',
         'photo_path',
         'is_active',
     ];
