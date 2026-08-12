@@ -24,7 +24,7 @@ return new class extends Migration
 
             $table->enum('status', [
                 'new',
-                'in_progress',
+                // 'in_progress',
                 'completed',
                 'rejected',
                 'cancelled',

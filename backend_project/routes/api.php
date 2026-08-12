@@ -453,6 +453,9 @@ Route::prefix('warehouseManager')->middleware(['auth:sanctum', 'active'])->group
     Route::get('purchase-invoices', [ReportController::class, 'purchaseInvoices']);
     Route::get('material-requests', [ReportController::class, 'materialRequests']);
 
+    Route::get('reports/dashboard',   [ReportController::class, 'dashboard']);
+    Route::post('reports/save-month', [ReportController::class, 'saveMonth']);
+
     // Notifications
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::patch('notifications/{id}/read', [NotificationController::class, 'markAsRead']);

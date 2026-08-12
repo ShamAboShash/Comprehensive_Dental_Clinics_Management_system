@@ -36,6 +36,7 @@ return new class extends Migration
             $table->enum('status', [
                 'new',
                 'in_progress',
+                'emergency',
                 'completed',
                 'cancelled',
             ])->default('new');

@@ -188,7 +188,7 @@ public function fulfill(FulfillMaterialRequestRequest $request, $id)
     }
 
     // Only new or in_progress can be fulfilled
-    if (!in_array($materialRequest->status, ['new', 'in_progress'])) {
+    if (!in_array($materialRequest->status, ['new'])) {
         return response()->json([
             'success' => false,
             'message' => 'لا يمكن تلبية طلب تمت معالجته مسبقاًاو تم رفضه',

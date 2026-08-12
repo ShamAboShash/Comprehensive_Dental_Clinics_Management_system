@@ -13,6 +13,7 @@ use App\Http\Resources\Dentist\LabOrderResource;
 use App\Models\LabOrder;
 use App\Models\LabOrderItem;
 use App\Models\LabOrderModification;
+use App\Models\LabOrderType;
 use App\Models\Treatment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -114,7 +115,7 @@ class LabOrderController extends Controller
 
             foreach ($request->items as $item) {
                 // Snapshot price from lab_order_type at order time
-                $type = \App\Models\LabOrderType::find($item['lab_order_type_id']);
+                $type = LabOrderType::find($item['lab_order_type_id']);
 
                 LabOrderItem::create([
                     'lab_order_id'      => $order->id,
@@ -188,7 +189,7 @@ class LabOrderController extends Controller
                 $totalPrice = 0;
 
                 foreach ($request->items as $item) {
-                $type = \App\Models\LabOrderType::find($item['lab_order_type_id']);
+                $type = LabOrderType::find($item['lab_order_type_id']);
 
                 LabOrderItem::create([
                     'lab_order_id'      => $labOrder->id,
