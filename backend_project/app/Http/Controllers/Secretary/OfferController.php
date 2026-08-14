@@ -47,22 +47,68 @@ class OfferController extends Controller
      * عرض عرض واحد
      * GET /secretary/showOffer/{id}
      */
-    public function show(int $id): JsonResponse
-    {
-        $offer = CenterOffer::with(['treatmentTypes', 'createdBy'])->find($id);
+/**
+ * عرض عرض واحد + المرضى الذين طبّقوا العرض
+ * GET /secretary/showOffer/{id}
+ */
+public function show(int $id): JsonResponse
+{
+    $offer = CenterOffer::with(['treatmentTypes', 'createdBy'])->find($id);
 
-        if (!$offer) {
-            return response()->json([
-                'success' => false,
-                'message' => 'العرض غير موجود.',
-            ], 404);
-        }
-
+    if (!$offer) {
         return response()->json([
-            'success' => true,
-            'data'    => $this->format($offer),
-        ]);
+            'success' => false,
+            'message' => 'العرض غير موجود.',
+        ], 404);
     }
+
+    $applications = \App\Models\TreatmentOffer::with([
+        'treatment.patient.user',
+        'treatment.invoice.items.toothTreatment',
+    ])
+        ->where('offer_id', $offer->id)
+        ->orderByDesc('applied_at')
+        ->get();
+
+    $patientsOnOffer = $applications->map(function (\App\Models\TreatmentOffer $app) {
+        $treatment = $app->treatment;
+        $invoice   = $treatment?->invoice;
+
+        $discountedItems = $invoice
+            ? $invoice->items->filter(fn ($item) => (float) $item->discount_percentage > 0)
+            : collect();
+
+        // session_id => total final price only
+        $sessions = $discountedItems
+            ->groupBy(fn ($item) => $item->toothTreatment?->session_id)
+            ->filter(fn ($_, $sessionId) => !empty($sessionId))
+            ->map(fn ($items, $sessionId) => [
+                'session_id' => (int) $sessionId,
+                'price'      => round($items->sum(fn ($i) => $i->finalPrice()), 2),
+            ])
+            ->values();
+
+        return [
+            'patient' => [
+                'id'   => $treatment?->patient_id,
+                'name' => $treatment?->patient?->user?->name,
+            ],
+            'applied_at'  => $app->applied_at
+                ? \Carbon\Carbon::parse($app->applied_at)->toDateTimeString()
+                : null,
+            'treatment_id'=> $treatment?->id,
+            'sessions'    => $sessions,
+        ];
+    });
+
+    return response()->json([
+        'success' => true,
+        'data'    => array_merge($this->format($offer), [
+            'patients_count'    => $patientsOnOffer->count(),
+            'patients_on_offer' => $patientsOnOffer,
+        ]),
+    ]);
+}
 
     /**
      * 33. إضافة عرض
@@ -252,7 +298,7 @@ class OfferController extends Controller
                 ? asset('storage/' . $offer->photo_path)
                 : null,
             'is_active'           => $offer->is_active,
-            'is_currently_active' => $offer->isCurrentlyActive(),
+            // 'is_currently_active' => $offer->isCurrentlyActive(),
             'created_by'          => $offer->createdBy?->name,
             'treatment_types'     => $offer->treatmentTypes->map(fn ($t) => [
                 'id'      => $t->id,
