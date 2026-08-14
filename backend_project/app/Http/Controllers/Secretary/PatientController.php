@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Gate;
 use App\Http\Requests\Secretary\StorePaymentRequest;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Models\Dentist;
 
 class PatientController extends Controller
 {
@@ -515,6 +516,76 @@ class PatientController extends Controller
                     'paid_at'        => $p->created_at?->toDateTimeString(),
                 ]),
             ],
+        ]);
+    }
+
+    public function indexDentist()
+    {
+        $dentists = Dentist::with([
+            'employee.user',
+            'specialization.appointmentTypes',
+            'workSchedules',
+            'treatments.treatmentType',
+        ])
+            ->whereHas('employee.user', fn ($q) => $q->where('is_active', true))
+            ->orderBy('id')
+            ->get();
+
+        $data = $dentists->map(function (Dentist $d) {
+            // Distinct treatment types this dentist has actually performed
+            $treatmentTypes = $d->treatments
+                ->pluck('treatmentType')
+                ->filter()
+                ->unique('id')
+                ->values()
+                ->map(fn ($t) => [
+                    'id'      => $t->id,
+                    'name'    => $t->name,
+                    'name_en' => $t->name_en,
+                ]);
+
+            // Appointment types linked to their specialization
+            // $appointmentTypes = $d->specialization?->appointmentTypes
+            //     ->map(fn ($a) => [
+            //         'id'      => $a->id,
+            //         'name'    => $a->name,
+            //         'name_en' => $a->name_en,
+            //     ]) ?? collect();
+
+            return [
+                'id'              => $d->id,
+                'name'            => $d->employee?->user?->name,
+                'phone'           => $d->employee?->user?->phone,
+                'profile_picture' => $d->employee?->user?->profile_picture_url,
+                'specialization'  => $d->specialization ? [
+                    'id'      => $d->specialization->id,
+                    'name'    => $d->specialization->name,
+                    'name_en' => $d->specialization->name_en,
+                ] : null,
+                'average_rating'  => (float) $d->average_rating,
+                // 'years_of_experience' => $d->years_of_experience,
+                // 'bio'             => $d->bio,
+                'treatment_types' => $treatmentTypes,
+                // 'appointment_types' => $appointmentTypes,
+                'work_schedule'   => $d->workSchedules
+                    ->sortBy(fn ($s) => array_search($s->day_of_week, [
+                        'saturday', 'sunday', 'monday', 'tuesday',
+                        'wednesday', 'thursday', 'friday',
+                    ]))
+                    ->values()
+                    ->map(fn ($s) => [
+                        'id'          => $s->id,
+                        'day_of_week' => $s->day_of_week,
+                        'start_time'  => $s->start_time,
+                        'end_time'    => $s->end_time,
+                    ]),
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'count'   => $data->count(),
+            'data'    => $data,
         ]);
     }
 }

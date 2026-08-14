@@ -21,13 +21,13 @@ class MaterialRequestController extends Controller
     }
 
     /**
-     * 16. عرض طلبات المواد (التي أرسلتها السكرتيرة)
      * GET /secretary/showAllMaterialRequests
      */
     public function index(): JsonResponse
     {
         $requests = MaterialRequest::with(['items.material', 'newItems', 'requestedBy', 'clinic'])
             ->where('requested_by', request()->user()->id)
+            ->where('requester_type', 'clinic')
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -39,13 +39,13 @@ class MaterialRequestController extends Controller
     }
 
     /**
-     * عرض طلب محدد
      * GET /secretary/showMaterialRequest/{id}
      */
     public function show(int $id): JsonResponse
     {
         $materialRequest = MaterialRequest::with(['items.material', 'newItems', 'requestedBy', 'clinic'])
             ->where('requested_by', request()->user()->id)
+            ->where('requester_type', 'clinic')
             ->find($id);
 
         if (!$materialRequest) {
@@ -62,7 +62,6 @@ class MaterialRequestController extends Controller
     }
 
     /**
-     * 17 + 21. إضافة طلبية (مواد موجودة + مواد جديدة)
      * POST /secretary/addMaterialRequest
      */
     public function store(StoreMaterialRequestRequest $request): JsonResponse
@@ -73,7 +72,7 @@ class MaterialRequestController extends Controller
             $materialRequest = MaterialRequest::create([
                 'requested_by'   => $request->user()->id,
                 'requester_type' => 'clinic',
-                'clinic_id'      => $request->clinic_id,   // from body (nullable)
+                'clinic_id'      => $request->clinic_id,
                 'notes'          => $request->notes,
                 'status'         => 'new',
             ]);
@@ -85,7 +84,6 @@ class MaterialRequestController extends Controller
                         'material_id'         => $item['material_id'],
                         'quantity_requested'  => $item['quantity_requested'],
                         'notes'               => $item['notes'] ?? null,
-                        'status'              => 'pending',
                     ]);
                 }
             }
@@ -99,8 +97,7 @@ class MaterialRequestController extends Controller
                         'unit'                => $item['unit'] ?? null,
                         'company_name'        => $item['company_name'] ?? null,
                         'dosage'              => $item['dosage'] ?? null,
-                        'status'              => 'pending',
-                        // NO 'reason' — column does not exist in migration
+                        'status'              => 'new',
                     ]);
                 }
             }
@@ -126,12 +123,12 @@ class MaterialRequestController extends Controller
     }
 
     /**
-     * 18. تعديل طلبية (فقط إذا كانت pending)
      * POST /secretary/updateMaterialRequest/{id}
      */
     public function update(UpdateMaterialRequestRequest $request, int $id): JsonResponse
     {
         $materialRequest = MaterialRequest::where('requested_by', request()->user()->id)
+            ->where('requester_type', 'clinic')
             ->find($id);
 
         if (!$materialRequest) {
@@ -156,7 +153,6 @@ class MaterialRequestController extends Controller
                 'clinic_id' => $request->has('clinic_id') ? $request->clinic_id : $materialRequest->clinic_id,
             ]);
 
-            // Replace items only if the key is present in the request
             if ($request->has('items')) {
                 $materialRequest->items()->delete();
 
@@ -166,7 +162,6 @@ class MaterialRequestController extends Controller
                         'material_id'         => $item['material_id'],
                         'quantity_requested'  => $item['quantity_requested'],
                         'notes'               => $item['notes'] ?? null,
-                        'status'              => 'pending',
                     ]);
                 }
             }
@@ -182,7 +177,7 @@ class MaterialRequestController extends Controller
                         'unit'                => $item['unit'] ?? null,
                         'company_name'        => $item['company_name'] ?? null,
                         'dosage'              => $item['dosage'] ?? null,
-                        'status'              => 'pending',
+                        'status'              => 'new',
                     ]);
                 }
             }
@@ -208,12 +203,12 @@ class MaterialRequestController extends Controller
     }
 
     /**
-     * 19. حذف / إلغاء طلبية (فقط إذا كانت pending)
      * POST /secretary/deleteMaterialRequest/{id}
      */
     public function destroy(int $id): JsonResponse
     {
         $materialRequest = MaterialRequest::where('requested_by', request()->user()->id)
+            ->where('requester_type', 'clinic')
             ->find($id);
 
         if (!$materialRequest) {
@@ -230,7 +225,7 @@ class MaterialRequestController extends Controller
             ], 422);
         }
 
-        $materialRequest->delete();
+        $materialRequest->update(['status' => 'cancelled']);
 
         return response()->json([
             'success' => true,
@@ -239,12 +234,12 @@ class MaterialRequestController extends Controller
     }
 
     /**
-     * 22. تعديل حالة الطلبية (السكرتيرة تستطيع فقط الإلغاء → cancelled)
      * POST /secretary/updateMaterialRequestStatus/{id}
      */
     public function updateStatus(int $id): JsonResponse
     {
         $materialRequest = MaterialRequest::where('requested_by', request()->user()->id)
+            ->where('requester_type', 'clinic')
             ->find($id);
 
         if (!$materialRequest) {

@@ -219,6 +219,8 @@ Route::prefix('secretary')->middleware(['auth:sanctum', 'active'])->group(functi
     Route::post('/addPatient', [SecretaryPatientController::class, 'store']);
     Route::post('/updatePatient/{id}', [SecretaryPatientController::class, 'update']);
 
+    //dentists
+    Route::get('/showAllDentists', [SecretaryPatientController::class, 'indexDentist']);
     // Payments
     Route::post('/addPayment', [SecretaryPatientController::class, 'addPayment']);
     Route::get('/patientInvoices/{patientId}', [SecretaryPatientController::class, 'patientInvoices']);
