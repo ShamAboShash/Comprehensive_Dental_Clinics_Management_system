@@ -7,6 +7,7 @@ use App\Http\Requests\Secretary\CheckInRequest;
 use App\Http\Requests\Secretary\CheckOutRequest;
 use App\Http\Requests\Secretary\UpdateAttendanceRequest;
 use App\Models\Attendance;
+use App\Models\DentistWorkSchedule;
 use App\Models\Employee;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -21,101 +22,221 @@ class AttendanceController extends Controller
     }
 
     /**
-     * 1. جدول حضور الموظفين اليومي
-     * GET /secretary/dailyAttendance?date=2026-08-09
-     */
-    public function daily(Request $request): JsonResponse
-    {
-        $date = $request->query('date', now()->toDateString());
+ * 1. جدول حضور يومي
+ * GET /secretary/dailyAttendance?date=2026-08-14
+ */
+public function daily(Request $request): JsonResponse
+{
+    $date = $request->query('date', now()->toDateString());
+    $dayOfWeek = strtolower(Carbon::parse($date)->format('l')); // monday, tuesday, ...
 
-        // All active staff employees
-        $employees = Employee::with(['user'])
-            ->whereHas('user', fn ($q) => $q->where('is_active', true))
-            ->get();
+    $employees = Employee::with(['user', 'dentist', 'workSchedules'])
+        ->whereHas('user', fn ($q) => $q->where('is_active', true))
+        ->get();
 
-        $attendances = Attendance::with(['registeredBy'])
-            ->whereDate('date', $date)
-            ->get()
-            ->keyBy('employee_id');
+    $attendances = Attendance::with('registeredBy')
+        ->whereDate('date', $date)
+        ->get()
+        ->keyBy('employee_id');
 
-        $data = $employees->map(function (Employee $employee) use ($attendances, $date) {
-            $att = $attendances->get($employee->id);
+    // Preload dentist schedules for this weekday
+    $dentistIds = $employees->pluck('dentist.id')->filter()->values();
+    $dentistSchedules = DentistWorkSchedule::whereIn('dentist_id', $dentistIds)
+        ->where('day_of_week', $dayOfWeek)
+        ->get()
+        ->groupBy('dentist_id');
 
+    $data = $employees->map(function (Employee $employee) use (
+        $attendances, $date, $dayOfWeek, $dentistSchedules
+    ) {
+        $worksToday = $this->employeeWorksOnDay($employee, $dayOfWeek, $dentistSchedules);
+        $att = $attendances->get($employee->id);
+
+        // No schedule for this day → holiday
+        if (!$worksToday) {
             return [
                 'employee_id'   => $employee->id,
                 'employee_name' => $employee->user->name ?? null,
                 'role'          => $employee->user->role?->value,
                 'role_label'    => $employee->user->role?->label(),
                 'date'          => $date,
-                'attendance'    => $att ? [
-                    'id'            => $att->id,
-                    'check_in'      => $att->check_in,
-                    'check_out'     => $att->check_out,
-                    'status'        => $att->status,
-                    'notes'         => $att->notes,
-                    'registered_by' => $att->registeredBy?->name,
-                ] : null,
-            ];
-        });
-
-        return response()->json([
-            'success' => true,
-            'date'    => $date,
-            'count'   => $data->count(),
-            'data'    => $data,
-        ]);
-    }
-
-    /**
-     * 2. جدول حضور الموظفين الشهري
-     * GET /secretary/monthlyAttendance?year=2026&month=8
-     */
-    public function monthly(Request $request): JsonResponse
-    {
-        $year  = (int) $request->query('year', now()->year);
-        $month = (int) $request->query('month', now()->month);
-
-        $start = Carbon::create($year, $month, 1)->startOfMonth();
-        $end   = $start->copy()->endOfMonth();
-
-        $attendances = Attendance::with(['employee.user', 'registeredBy'])
-            ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
-            ->orderBy('date')
-            ->orderBy('employee_id')
-            ->get();
-
-        // Group by employee
-        $grouped = $attendances->groupBy('employee_id')->map(function ($rows) {
-            $first = $rows->first();
-
-            return [
-                'employee_id'   => $first->employee_id,
-                'employee_name' => $first->employee?->user?->name,
-                'role'          => $first->employee?->user?->role?->value,
-                'days'          => $rows->map(fn ($a) => [
-                    'id'        => $a->id,
-                    'date'      => $a->date?->toDateString(),
-                    'check_in'  => $a->check_in,
-                    'check_out' => $a->check_out,
-                    'status'    => $a->status,
-                    'notes'     => $a->notes,
-                ])->values(),
-                'summary' => [
-                    'present' => $rows->where('status', 'present')->count(),
-                    'absent'  => $rows->where('status', 'absent')->count(),
-                    'total'   => $rows->count(),
+                'attendance'    => [
+                    'id'        => $att?->id,
+                    'check_in'  => null,
+                    'check_out' => null,
+                    'status'    => 'holiday',
+                    'notes'     => $att?->notes,
                 ],
             ];
-        })->values();
+        }
 
-        return response()->json([
-            'success' => true,
-            'year'    => $year,
-            'month'   => $month,
-            'count'   => $grouped->count(),
-            'data'    => $grouped,
-        ]);
+        // Work day: real record or not_registered_yet
+        return [
+            'employee_id'   => $employee->id,
+            'employee_name' => $employee->user->name ?? null,
+            'role'          => $employee->user->role?->value,
+            'role_label'    => $employee->user->role?->label(),
+            'date'          => $date,
+            'is_work_day'   => true,
+            'attendance'    => $att ? [
+                'id'            => $att->id,
+                'check_in'      => $att->check_in,
+                'check_out'     => $att->check_out,
+                'status'        => $att->status,
+                'notes'         => $att->notes,
+                'registered_by' => $att->registeredBy?->name,
+            ] : [
+                'id'        => null,
+                'check_in'  => null,
+                'check_out' => null,
+                'status'    => 'not_registered_yet',
+                'notes'     => null,
+            ],
+        ];
+    });
+
+    return response()->json([
+        'success' => true,
+        'date'    => $date,
+        'day'     => $dayOfWeek,
+        'count'   => $data->count(),
+        'data'    => $data,
+    ]);
+}
+
+/**
+ * 2. جدول حضور شهري
+ * GET /secretary/monthlyAttendance?year=2026&month=8
+ */
+public function monthly(Request $request): JsonResponse
+{
+    $year  = (int) $request->query('year', now()->year);
+    $month = (int) $request->query('month', now()->month);
+
+    $start = Carbon::create($year, $month, 1)->startOfMonth();
+    $end   = $start->copy()->endOfMonth();
+
+    $employees = Employee::with(['user', 'dentist', 'workSchedules'])
+        ->whereHas('user', fn ($q) => $q->where('is_active', true))
+        ->get();
+
+    $attendances = Attendance::whereBetween('date', [$start->toDateString(), $end->toDateString()])
+        ->get()
+        ->groupBy(fn ($a) => $a->employee_id . '_' . $a->date->toDateString());
+
+    // All dentist schedules (all weekdays)
+    $dentistIds = $employees->pluck('dentist.id')->filter()->values();
+    $allDentistSchedules = DentistWorkSchedule::whereIn('dentist_id', $dentistIds)
+        ->get()
+        ->groupBy('dentist_id');
+
+    $data = $employees->map(function (Employee $employee) use (
+        $start, $end, $attendances, $allDentistSchedules
+    ) {
+        $days = [];
+        $cursor = $start->copy();
+
+        while ($cursor->lte($end)) {
+            $dateStr   = $cursor->toDateString();
+            $dayOfWeek = strtolower($cursor->format('l'));
+            $key       = $employee->id . '_' . $dateStr;
+
+            $dentistSchedulesForEmp = $employee->dentist
+                ? ($allDentistSchedules->get($employee->dentist->id) ?? collect())
+                : collect();
+
+            $works = $this->employeeWorksOnDay(
+                $employee,
+                $dayOfWeek,
+                $employee->dentist
+                    ? collect([$employee->dentist->id => $dentistSchedulesForEmp])
+                    : collect()
+            );
+
+            $att = $attendances->get($key)?->first();
+
+            if (!$works) {
+                $days[] = [
+                    'date'      => $dateStr,
+                    'day'       => $dayOfWeek,
+                    'is_work_day' => false,
+                    'status'    => 'holiday',
+                    'check_in'  => null,
+                    'check_out' => null,
+                    'notes'     => $att?->notes,
+                    'id'        => $att?->id,
+                ];
+            } else {
+                $days[] = [
+                    'date'        => $dateStr,
+                    'day'         => $dayOfWeek,
+                    'is_work_day' => true,
+                    'status'      => $att?->status ?? 'not_registered_yet',
+                    'check_in'    => $att?->check_in,
+                    'check_out'   => $att?->check_out,
+                    'notes'       => $att?->notes,
+                    'id'          => $att?->id,
+                ];
+            }
+
+            $cursor->addDay();
+        }
+
+        $statuses = collect($days)->pluck('status');
+
+        return [
+            'employee_id'   => $employee->id,
+            'employee_name' => $employee->user->name ?? null,
+            'role'          => $employee->user->role?->value,
+            'days'          => $days,
+            'summary'       => [
+                'present'             => $statuses->filter(fn ($s) => $s === 'present')->count(),
+                'absent'              => $statuses->filter(fn ($s) => $s === 'absent')->count(),
+                'late'                => $statuses->filter(fn ($s) => $s === 'late')->count(),
+                'on_leave'            => $statuses->filter(fn ($s) => $s === 'on_leave')->count(),
+                'holiday'             => $statuses->filter(fn ($s) => $s === 'holiday')->count(),
+                'not_registered_yet'  => $statuses->filter(fn ($s) => $s === 'not_registered_yet')->count(),
+                'work_days'           => collect($days)->where('is_work_day', true)->count(),
+            ],
+        ];
+    });
+
+    return response()->json([
+        'success' => true,
+        'year'    => $year,
+        'month'   => $month,
+        'count'   => $data->count(),
+        'data'    => $data,
+    ]);
+}
+
+
+
+private function employeeWorksOnDay(
+    Employee $employee,
+    string $dayOfWeek,
+    $dentistSchedulesGrouped
+): bool {
+    // Dentist: use dentist schedule
+    if ($employee->dentist) {
+        $schedules = $dentistSchedulesGrouped->get($employee->dentist->id) ?? collect();
+
+        // groupBy may return a collection of schedules; filter by day if needed
+        if ($schedules->isEmpty()) {
+            return false;
+        }
+
+        // If already filtered by day in daily(), any item means works
+        // If full list (monthly), filter by day
+        return $schedules->contains(function ($s) use ($dayOfWeek) {
+            return strtolower($s->day_of_week) === $dayOfWeek;
+        });
     }
+
+    // Non-dentist employee: employee_work_schedules
+    return $employee->workSchedules
+        ->contains(fn ($s) => strtolower($s->day_of_week) === $dayOfWeek);
+}
 
     /**
      * تسجيل حضور (Check-in)
@@ -212,11 +333,40 @@ class AttendanceController extends Controller
         ]);
     }
 
-    /**
-     * 3. تغيير حالة الحضور / تعديل سجل
-     * POST /secretary/updateAttendance/{id}
-     */
-    public function update(UpdateAttendanceRequest $request, int $id): JsonResponse
+    // /**
+    //  * 3. تغيير حالة الحضور / تعديل سجل
+    //  * POST /secretary/updateAttendance/{id}
+    //  */
+    // public function update(UpdateAttendanceRequest $request, int $id): JsonResponse
+    // {
+    //     $attendance = Attendance::find($id);
+
+    //     if (!$attendance) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'سجل الحضور غير موجود.',
+    //         ], 404);
+    //     }
+
+    //     $attendance->update([
+    //         'status'        => $request->status ?? $attendance->status,
+    //         'check_in'      => $request->has('check_in') ? $request->check_in : $attendance->check_in,
+    //         'check_out'     => $request->has('check_out') ? $request->check_out : $attendance->check_out,
+    //         'notes'         => $request->has('notes') ? $request->notes : $attendance->notes,
+    //         'registered_by' => $request->user()->id,
+    //     ]);
+
+    //     $attendance->load(['employee.user', 'registeredBy']);
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'تم تحديث سجل الحضور بنجاح.',
+    //         'data'    => $this->formatAttendance($attendance),
+    //     ]);
+    // }
+
+
+    public function updateAttendanceOnLeave(Request $request, int $id): JsonResponse
     {
         $attendance = Attendance::find($id);
 
@@ -228,8 +378,37 @@ class AttendanceController extends Controller
         }
 
         $attendance->update([
-            'status'        => $request->status ?? $attendance->status,
-            'check_in'      => $request->has('check_in') ? $request->check_in : $attendance->check_in,
+            'status'        => 'on_leave',
+            'check_in'      => null,
+            'check_out'     => null,
+            'notes'         => $request->has('notes') ? $request->notes : $attendance->notes,
+            'registered_by' => $request->user()->id,
+        ]);
+
+        $attendance->load(['employee.user', 'registeredBy']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم تسجيل حالة الموظف (إجازة) بنجاح.',
+            'data'    => $this->formatAttendance($attendance),
+        ]);
+    }
+
+
+    public function updateAttendanceLate(Request $request, int $id): JsonResponse
+    {
+        $attendance = Attendance::find($id);
+
+        if (!$attendance) {
+            return response()->json([
+                'success' => false,
+                'message' => 'سجل الحضور غير موجود.',
+            ], 404);
+        }
+
+        $attendance->update([
+            'status'        => 'late',
+            'check_in'      => $request->has('check_in') ? $request->check_in : ($attendance->check_in ?? now()->format('H:i:s')),
             'check_out'     => $request->has('check_out') ? $request->check_out : $attendance->check_out,
             'notes'         => $request->has('notes') ? $request->notes : $attendance->notes,
             'registered_by' => $request->user()->id,
@@ -239,7 +418,7 @@ class AttendanceController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'تم تحديث سجل الحضور بنجاح.',
+            'message' => 'تم تسجيل حالة الموظف (متأخر) بنجاح.',
             'data'    => $this->formatAttendance($attendance),
         ]);
     }

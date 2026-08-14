@@ -26,12 +26,15 @@ return new class extends Migration
             // $table->time('shift_end')->nullable();
 
             $table->enum('status', [
+                'not_registered_yet',
                 'present',
                 'absent',
                 'on_leave',
-                'weekend',
+                'late',
+                'holiday',
+
                 
-            ])->default('present');
+            ])->default('not_registered_yet');
 
             $table->text('notes')->nullable();
 
