@@ -13,6 +13,13 @@ class MaterialRequestResource extends JsonResource
             'status'         => $this->status,
             'requester_type' => $this->requester_type,
             'notes'          => $this->notes,
+
+            'clinic_id'       => $this->clinic_id,
+            'clinic'          => $this->whenLoaded('clinic', fn () => $this->clinic ? [
+                'id'   => $this->clinic->id,
+                'name' => $this->clinic->name,
+            ] : null),
+            
             'requester' => $this->whenLoaded('requestedBy', fn () => $this->requestedBy ? [
                 'id'   => $this->requestedBy->id,
                 'name' => $this->requestedBy->name,
