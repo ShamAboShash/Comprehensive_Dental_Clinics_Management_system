@@ -445,6 +445,8 @@ Route::prefix('warehouseManager')->middleware(['auth:sanctum', 'active'])->group
     Route::get('showMaterialRequestDetails/{id}', [WarehouseMaterialRequestController::class, 'show']);
     Route::post('materialRequestFulfill/{id}', [WarehouseMaterialRequestController::class, 'fulfill']);
     Route::post('materialRequestReject/{id}', [WarehouseMaterialRequestController::class, 'reject']);
+    Route::post('materialRequestPending/{id}', [WarehouseMaterialRequestController::class, 'markPending']);
+
 
     // Purchase Invoices
     Route::get('showAllPurchaseInvoices', [PurchaseInvoiceController::class, 'index']);

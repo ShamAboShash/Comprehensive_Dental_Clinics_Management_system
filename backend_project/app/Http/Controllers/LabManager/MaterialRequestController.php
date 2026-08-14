@@ -10,7 +10,6 @@ use App\Models\MaterialRequestItem;
 use App\Models\NewMaterialRequest;
 use App\Models\User;
 use App\Enums\UserRole;
-use App\Services\NotificationService;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
 
@@ -24,8 +23,9 @@ class MaterialRequestController extends Controller
     // GET /lab/material-requests
     public function index()
     {
-        $requests = MaterialRequest::with(['items.material', 'newItems'])
+        $requests = MaterialRequest::with(['items.material', 'newItems', 'requestedBy', 'clinic'])
             ->where('requested_by', request()->user()->id)
+            ->where('requester_type', 'lab')
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -41,9 +41,12 @@ class MaterialRequestController extends Controller
         $materialRequest = MaterialRequest::with([
             'items.material',
             'newItems',
+            'requestedBy',
+            'clinic',
         ])
-        ->where('requested_by', request()->user()->id)
-        ->find($id);
+            ->where('requested_by', request()->user()->id)
+            ->where('requester_type', 'lab')
+            ->find($id);
 
         if (!$materialRequest) {
             return response()->json([
@@ -67,11 +70,12 @@ class MaterialRequestController extends Controller
             $materialRequest = MaterialRequest::create([
                 'requested_by'   => $request->user()->id,
                 'requester_type' => 'lab',
+                'clinic_id'      => null,
                 'notes'          => $request->notes,
-                'status'         => 'new',
+                'status'         => 'new', // new | pending | completed | cancelled | rejected
             ]);
 
-            // Existing materials
+            // Existing materials (no item-level status)
             if ($request->filled('items')) {
                 foreach ($request->items as $item) {
                     MaterialRequestItem::create([
@@ -83,7 +87,7 @@ class MaterialRequestController extends Controller
                 }
             }
 
-            // New materials
+            // New materials (no "reason" column in DB)
             if ($request->filled('new_items')) {
                 foreach ($request->new_items as $item) {
                     NewMaterialRequest::create([
@@ -92,24 +96,18 @@ class MaterialRequestController extends Controller
                         'quantity'            => $item['quantity'],
                         'unit'                => $item['unit'] ?? null,
                         'company_name'        => $item['company_name'] ?? null,
-                        'reason'              => $item['reason'] ?? null,
+                        'dosage'              => $item['dosage'] ?? null,
+                        'status'              => 'new',
                     ]);
                 }
             }
 
-            // Notify warehouse managers
-            $warehouseManagers = User::where('role', UserRole::WAREHOUSE_MANAGER)
-                ->where('is_active', true)
-                ->get();
-
+            // Notify warehouse managers (optional — uncomment when NotificationService is ready)
+            // $warehouseManagers = User::where('role', UserRole::WAREHOUSE_MANAGER->value)
+            //     ->where('is_active', true)
+            //     ->get();
             // foreach ($warehouseManagers as $manager) {
-            //     NotificationService::send(
-            //         user: $manager,
-            //         title: 'طلب مواد جديد من المختبر',
-            //         body: "أرسل مدير المختبر طلب مواد جديد #{$materialRequest->id}",
-            //         type: 'material_request_created',
-            //         referenceable: $materialRequest,
-            //     );
+            //     NotificationService::send(...);
             // }
 
             DB::commit();
@@ -118,7 +116,7 @@ class MaterialRequestController extends Controller
                 'success' => true,
                 'message' => 'تم إرسال طلب المواد بنجاح',
                 'data'    => new MaterialRequestResource(
-                    $materialRequest->load(['items.material', 'newItems'])
+                    $materialRequest->load(['items.material', 'newItems', 'requestedBy'])
                 ),
             ], 201);
 
@@ -128,14 +126,17 @@ class MaterialRequestController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'حدث خطأ أثناء إنشاء الطلب',
+                // 'error'   => $e->getMessage(), // enable while debugging
             ], 500);
         }
     }
 
     // DELETE /lab/material-requests/{id}
+    // Soft-cancel: only allowed while status is still "new"
     public function destroy($id)
     {
         $materialRequest = MaterialRequest::where('requested_by', request()->user()->id)
+            ->where('requester_type', 'lab')
             ->find($id);
 
         if (!$materialRequest) {
@@ -152,7 +153,12 @@ class MaterialRequestController extends Controller
             ], 422);
         }
 
-        $materialRequest->delete();
+        // Prefer marking as cancelled instead of hard delete (keeps history)
+        $materialRequest->update([
+            'status' => 'cancelled',
+        ]);
+
+        // If you prefer hard delete, use: $materialRequest->delete();
 
         return response()->json([
             'success' => true,

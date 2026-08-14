@@ -13,6 +13,7 @@ class PatientListResource extends JsonResource
             'id'              => $this->id,
             'name'            => $this->user->name,
             'phone'           => $this->user->phone,
+            'email'           => $this->user->email,
             'profile_picture' => $this->user->profile_picture
                 ? Storage::url($this->user->profile_picture)
                 : null,

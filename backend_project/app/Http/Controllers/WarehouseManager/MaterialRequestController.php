@@ -236,4 +236,48 @@ class MaterialRequestController extends Controller
             ]),
         ]);
     }
+
+
+    /**
+ * PATCH /warehouse/material-requests/{id}/pending
+ *
+ * Move request from new → pending (warehouse started working on it).
+ * Allowed from: new only
+ * Final status: pending
+ */
+    public function markPending($id)
+    {
+        $materialRequest = MaterialRequest::find($id);
+
+        if (!$materialRequest) {
+            return response()->json([
+                'success' => false,
+                'message' => 'الطلب غير موجود',
+            ], 404);
+        }
+
+        if ($materialRequest->status !== 'new') {
+            return response()->json([
+                'success' => false,
+                'message' => 'يمكن تحويل الطلب إلى قيد المعالجة فقط إذا كان حالته جديد',
+            ], 422);
+        }
+
+        $materialRequest->update([
+            'status' => 'pending',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم تحويل الطلب إلى قيد المعالجة',
+            'data'    => $materialRequest->fresh([
+                'requestedBy',
+                'clinic',
+                'items.material',
+                'newItems',
+            ]),
+        ]);
+    }
 }
+
+
