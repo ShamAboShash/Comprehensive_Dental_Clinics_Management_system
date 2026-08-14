@@ -29,6 +29,8 @@ return new class extends Migration
                 'present',
                 'absent',
                 'on_leave',
+                'weekend',
+                
             ])->default('present');
 
             $table->text('notes')->nullable();

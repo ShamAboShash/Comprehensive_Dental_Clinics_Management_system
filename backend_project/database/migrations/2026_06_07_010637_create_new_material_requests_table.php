@@ -22,11 +22,11 @@ return new class extends Migration
             $table->string('dosage')->nullable();
 
             $table->enum('status', [
-                'pending',
+                'new',
                 'approved',
                 'rejected',
                 'purchased',
-            ])->default('pending');
+            ])->default('new');
 
             $table->timestamps();
         });

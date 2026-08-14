@@ -24,10 +24,10 @@ return new class extends Migration
 
             $table->enum('status', [
                 'new',
-                // 'in_progress',
+                'pending',
                 'completed',
-                'rejected',
                 'cancelled',
+                'rejected',
             ])->default('new');
 
             $table->text('notes')->nullable();

@@ -24,11 +24,11 @@ class AuthServiceProvider extends ServiceProvider
         // ================ Gates ================
 
         Gate::define('manage-employees', function (User $user) {
-            return $user->isAdmin() || $user->isPatient();
+            return $user->isAdmin() || $user->isPatient() || $user->isSecretary();
         });
 
         Gate::define('view-employees', function (User $user) {
-            return $user->isAdmin();
+            return $user->isAdmin() || $user->isSecretary();
             //  || $user->isDentist(); // Dentists might see staff list later
         });
 
@@ -149,6 +149,11 @@ class AuthServiceProvider extends ServiceProvider
 
         Gate::define('is-dentist-is-patient', function ($user) {
             return $user->isDentist() || $user->isPatient();
+        });
+
+
+        Gate::define('is-admin-secretary', function ($user) {
+            return $user->isAdmin() || $user->isSecretary();
         });
      }
 }

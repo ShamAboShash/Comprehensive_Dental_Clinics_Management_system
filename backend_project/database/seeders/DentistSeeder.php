@@ -130,7 +130,7 @@ class DentistSeeder extends Seeder
                 'gender'        => $data['gender'],
                 'role'          => UserRole::DENTIST,
                 // 'password'      => Hash::make('password'),
-                'is_active'        => false,
+                'is_active'        => true,
                 'profile_picture' => $profilePic,
 
             ]);

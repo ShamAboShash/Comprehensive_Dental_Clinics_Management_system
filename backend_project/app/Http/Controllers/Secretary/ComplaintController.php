@@ -22,50 +22,50 @@ class ComplaintController extends Controller
      * 24. عرض الشكاوى
      * GET /secretary/showAllComplaints?status=&priority=&patient_id=
      */
-    public function index(Request $request): JsonResponse
-    {
-        $query = Complaint::with(['patient.user', 'submittedBy'])
-            ->orderByDesc('created_at');
+    // public function index(Request $request): JsonResponse
+    // {
+    //     $query = Complaint::with(['patient.user', 'submittedBy'])
+    //         ->orderByDesc('created_at');
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-        if ($request->filled('priority')) {
-            $query->where('priority', $request->priority);
-        }
-        if ($request->filled('patient_id')) {
-            $query->where('patient_id', $request->patient_id);
-        }
+    //     if ($request->filled('status')) {
+    //         $query->where('status', $request->status);
+    //     }
+    //     if ($request->filled('priority')) {
+    //         $query->where('priority', $request->priority);
+    //     }
+    //     if ($request->filled('patient_id')) {
+    //         $query->where('patient_id', $request->patient_id);
+    //     }
 
-        $complaints = $query->get();
+    //     $complaints = $query->get();
 
-        return response()->json([
-            'success' => true,
-            'count'   => $complaints->count(),
-            'data'    => $complaints->map(fn ($c) => $this->format($c)),
-        ]);
-    }
+    //     return response()->json([
+    //         'success' => true,
+    //         'count'   => $complaints->count(),
+    //         'data'    => $complaints->map(fn ($c) => $this->format($c)),
+    //     ]);
+    // }
 
-    /**
-     * 26. عرض شكوى حسب id
-     * GET /secretary/showComplaint/{id}
-     */
-    public function show(int $id): JsonResponse
-    {
-        $complaint = Complaint::with(['patient.user', 'submittedBy'])->find($id);
+    // /**
+    //  * 26. عرض شكوى حسب id
+    //  * GET /secretary/showComplaint/{id}
+    //  */
+    // public function show(int $id): JsonResponse
+    // {
+    //     $complaint = Complaint::with(['patient.user', 'submittedBy'])->find($id);
 
-        if (!$complaint) {
-            return response()->json([
-                'success' => false,
-                'message' => 'الشكوى غير موجودة.',
-            ], 404);
-        }
+    //     if (!$complaint) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'الشكوى غير موجودة.',
+    //         ], 404);
+    //     }
 
-        return response()->json([
-            'success' => true,
-            'data'    => $this->format($complaint),
-        ]);
-    }
+    //     return response()->json([
+    //         'success' => true,
+    //         'data'    => $this->format($complaint),
+    //     ]);
+    // }
 
     /**
      * 25. إضافة شكوى

@@ -10,7 +10,7 @@ class MaterialRequestItem extends Model
         'material_request_id',
         'material_id',
         'quantity_requested',
-        'status',
+        // 'status',
         'notes',
     ];
 

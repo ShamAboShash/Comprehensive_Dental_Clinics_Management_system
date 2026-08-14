@@ -171,7 +171,7 @@ class CenterController extends Controller
 
     public function complaintIndex(Request $request): JsonResponse
     {
-        Gate::authorize('is-admin');
+        Gate::authorize('is-admin-secretary');
 
         $validated = $request->validate([
             'status'   => 'nullable|string|in:pending,in_review,resolved,rejected',

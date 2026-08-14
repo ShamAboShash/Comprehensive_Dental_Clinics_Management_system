@@ -2,246 +2,232 @@
 
 namespace Database\Seeders;
 
-use App\Enums\UserRole;
 use App\Models\Clinic;
 use App\Models\Material;
 use App\Models\MaterialRequest;
 use App\Models\MaterialRequestItem;
 use App\Models\NewMaterialRequest;
 use App\Models\User;
+use App\Enums\UserRole;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
 class MaterialRequestSeeder extends Seeder
 {
     public function run(): void
     {
-        $labManagers = User::where('role', UserRole::LAB_MANAGER)->get();
-        $secretaries = User::where('role', UserRole::SECRETARY)->get();
-        $materials   = Material::all();
-        $clinics     = Clinic::all();
-
-        if ($labManagers->isEmpty()) {
-            $this->command->warn('No LAB_MANAGER users found. Run EmployeeSeeder first.');
-            return;
-        }
+        $clinics = Clinic::all();
+        $materials = Material::all();
+        $clinicMaterials = Material::whereIn('category', ['clinic', 'both'])->get();
+        $labMaterials    = Material::whereIn('category', ['lab', 'both'])->get();
 
         if ($materials->isEmpty()) {
-            $this->command->warn('No materials found. Run MaterialSeeder first.');
+            $this->command->warn('Skipping MaterialRequestSeeder: no materials found.');
             return;
         }
 
-        $labMaterials    = $materials->whereIn('category', ['lab', 'both'])->values();
-        $clinicMaterials = $materials->whereIn('category', ['clinic', 'both'])->values();
+        // Requesters
+        $secretaries = User::where('role', UserRole::SECRETARY->value)
+            ->where('is_active', true)
+            ->get();
+        $labManagers = User::where('role', UserRole::LAB_MANAGER->value)
+            ->where('is_active', true)
+            ->get();
+        $admins = User::where('role', UserRole::ADMIN->value)
+            ->where('is_active', true)
+            ->get();
 
-        // =========================================================
-        // 1) NEW — Lab request (existing materials only)
-        // =========================================================
-        $req1 = MaterialRequest::create([
-            'requested_by'   => $labManagers->first()->id,
-            'requester_type' => 'lab',
-            'clinic_id'      => null,
-            'status'         => 'new',
-            'notes'          => 'نحتاج مواد للمخبر بشكل عاجل',
-            'warehouse_notes'=> null,
-            'created_at'     => now()->subDays(2),
-            'updated_at'     => now()->subDays(2),
-        ]);
+        $clinicRequester = $secretaries->first() ?? $admins->first() ?? User::where('is_active', true)->first();
+        $labRequester    = $labManagers->first() ?? $admins->first() ?? $clinicRequester;
 
-        foreach ($labMaterials->take(2) as $material) {
-            MaterialRequestItem::create([
-                'material_request_id' => $req1->id,
-                'material_id'         => $material->id,
-                'quantity_requested'  => rand(5, 20),
-                'status'              => 'pending',
-                'notes'               => null,
-            ]);
+        if (!$clinicRequester) {
+            $this->command->warn('Skipping MaterialRequestSeeder: no active user for requested_by.');
+            return;
         }
 
-        // =========================================================
-        // 2) NEW — Lab request (existing + new materials)
-        // =========================================================
-        $req2 = MaterialRequest::create([
-            'requested_by'   => $labManagers->first()->id,
-            'requester_type' => 'lab',
-            'clinic_id'      => null,
-            'status'         => 'new',
-            'notes'          => 'طلب مواد موجودة + مواد جديدة غير متوفرة في النظام',
-            'warehouse_notes'=> null,
-            'created_at'     => now()->subDay(),
-            'updated_at'     => now()->subDay(),
-        ]);
+        // material_requests.status → new, pending, completed, cancelled, rejected
+        $statuses = ['new', 'pending', 'completed', 'cancelled', 'rejected'];
 
-        if ($labMaterials->isNotEmpty()) {
-            MaterialRequestItem::create([
-                'material_request_id' => $req2->id,
-                'material_id'         => $labMaterials->first()->id,
-                'quantity_requested'  => 10,
-                'status'              => 'pending',
-            ]);
-        }
+        // new_material_requests.status
+        $newStatuses = ['new', 'approved', 'rejected', 'purchased'];
 
-        NewMaterialRequest::create([
-            'material_request_id' => $req2->id,
-            'material_name'       => 'شمع نحت الأسنان',
-            'company_name'        => 'Renfert',
-            'unit'                => 'علبة',
-            'quantity'            => 5,
-            'dosage'              => null,
-            'status'              => 'pending',
-        ]);
+        $augustStart = Carbon::create(2026, 8, 1);
+        $totalRequests = 0;
+        $totalItems = 0;
+        $totalNew = 0;
 
-        NewMaterialRequest::create([
-            'material_request_id' => $req2->id,
-            'material_name'       => 'قرص زركون شفاف',
-            'company_name'        => 'Ivoclar',
-            'unit'                => 'قطعة',
-            'quantity'            => 3,
-            'dosage'              => null,
-            'status'              => 'pending',
-        ]);
+        // ---------------------------------------------------------------
+        // 1) Clinic requests — more than 7 per clinic
+        // ---------------------------------------------------------------
+        $clinicRequestCount = 0;
 
-        // =========================================================
-        // 3) IN_PROGRESS — warehouse started working
-        // =========================================================
-        $req3 = MaterialRequest::create([
-            'requested_by'   => $labManagers->first()->id,
-            'requester_type' => 'lab',
-            'clinic_id'      => null,
-            'status'         => 'in_progress',
-            'notes'          => 'جاري تجهيز الطلب من المستودع',
-            'warehouse_notes'=> 'يتم تجهيز الكميات حالياً',
-            'created_at'     => now()->subDays(3),
-            'updated_at'     => now()->subHours(5),
-        ]);
+        if ($clinics->isEmpty()) {
+            $this->command->warn('No clinics found — creating clinic-type requests without clinic_id.');
+            for ($i = 0; $i < 10; $i++) {
+                $this->createOneRequest(
+                    requesterType: 'clinic',
+                    clinicId: null,
+                    requestedBy: $clinicRequester->id,
+                    materials: $clinicMaterials->isNotEmpty() ? $clinicMaterials : $materials,
+                    baseDate: $augustStart->copy()->addDays($i % 28),
+                    statuses: $statuses,
+                    newStatuses: $newStatuses,
+                    totalRequests: $totalRequests,
+                    totalItems: $totalItems,
+                    totalNew: $totalNew
+                );
+                $clinicRequestCount++;
+            }
+        } else {
+            foreach ($clinics as $cIndex => $clinic) {
+                // >7 per clinic → 8 or 9
+                $countForClinic = 8 + ($cIndex % 2);
 
-        foreach ($labMaterials->take(2) as $material) {
-            MaterialRequestItem::create([
-                'material_request_id' => $req3->id,
-                'material_id'         => $material->id,
-                'quantity_requested'  => rand(8, 15),
-                'status'              => 'pending',
-            ]);
-        }
-
-        // =========================================================
-        // 4) COMPLETED — fully fulfilled
-        // =========================================================
-        $req4 = MaterialRequest::create([
-            'requested_by'   => $labManagers->count() > 1
-                ? $labManagers->get(1)->id
-                : $labManagers->first()->id,
-            'requester_type' => 'lab',
-            'clinic_id'      => null,
-            'status'         => 'completed',
-            'notes'          => 'تم استلام كل المواد بنجاح',
-            'warehouse_notes'=> 'تم التسليم بالكامل',
-            'created_at'     => now()->subDays(10),
-            'updated_at'     => now()->subDays(8),
-        ]);
-
-        foreach ($labMaterials->take(3) as $material) {
-            MaterialRequestItem::create([
-                'material_request_id' => $req4->id,
-                'material_id'         => $material->id,
-                'quantity_requested'  => rand(5, 12),
-                'status'              => 'fulfilled',
-            ]);
-        }
-
-        // =========================================================
-        // 5) IN_PROGRESS — partial (some items fulfilled, some not)
-        // =========================================================
-        $req5 = MaterialRequest::create([
-            'requested_by'   => $labManagers->first()->id,
-            'requester_type' => 'lab',
-            'clinic_id'      => null,
-            'status'         => 'in_progress',
-            'notes'          => 'تم تلبية جزء من الطلب فقط',
-            'warehouse_notes'=> 'بعض المواد غير متوفرة حالياً',
-            'created_at'     => now()->subDays(6),
-            'updated_at'     => now()->subDays(5),
-        ]);
-
-        $partialMaterials = $labMaterials->take(3);
-        foreach ($partialMaterials as $index => $material) {
-            MaterialRequestItem::create([
-                'material_request_id' => $req5->id,
-                'material_id'         => $material->id,
-                'quantity_requested'  => rand(10, 20),
-                'status'              => $index === 0 ? 'fulfilled' : 'not_available',
-            ]);
-        }
-
-        // =========================================================
-        // 6) CANCELLED
-        // =========================================================
-        $req6 = MaterialRequest::create([
-            'requested_by'   => $labManagers->first()->id,
-            'requester_type' => 'lab',
-            'clinic_id'      => null,
-            'status'         => 'cancelled',
-            'notes'          => 'تم إلغاء الطلب من قبل المخبر',
-            'warehouse_notes'=> null,
-            'created_at'     => now()->subDays(12),
-            'updated_at'     => now()->subDays(11),
-        ]);
-
-        if ($labMaterials->isNotEmpty()) {
-            MaterialRequestItem::create([
-                'material_request_id' => $req6->id,
-                'material_id'         => $labMaterials->first()->id,
-                'quantity_requested'  => 7,
-                'status'              => 'pending',
-            ]);
-        }
-
-        // =========================================================
-        // 7) NEW — from Clinic (secretary)
-        // =========================================================
-        if ($secretaries->isNotEmpty() && $clinics->isNotEmpty() && $clinicMaterials->isNotEmpty()) {
-            $req7 = MaterialRequest::create([
-                'requested_by'   => $secretaries->first()->id,
-                'requester_type' => 'clinic',
-                'clinic_id'      => $clinics->first()->id,
-                'status'         => 'new',
-                'notes'          => 'طلب مواد للعيادة',
-                'warehouse_notes'=> null,
-                'created_at'     => now()->subHours(8),
-                'updated_at'     => now()->subHours(8),
-            ]);
-
-            foreach ($clinicMaterials->take(2) as $material) {
-                MaterialRequestItem::create([
-                    'material_request_id' => $req7->id,
-                    'material_id'         => $material->id,
-                    'quantity_requested'  => rand(10, 30),
-                    'status'              => 'pending',
-                ]);
+                for ($i = 0; $i < $countForClinic; $i++) {
+                    $this->createOneRequest(
+                        requesterType: 'clinic',
+                        clinicId: $clinic->id,
+                        requestedBy: $clinicRequester->id,
+                        materials: $clinicMaterials->isNotEmpty() ? $clinicMaterials : $materials,
+                        baseDate: $augustStart->copy()->addDays(($cIndex * 3 + $i) % 30),
+                        statuses: $statuses,
+                        newStatuses: $newStatuses,
+                        totalRequests: $totalRequests,
+                        totalItems: $totalItems,
+                        totalNew: $totalNew
+                    );
+                    $clinicRequestCount++;
+                }
             }
         }
 
-        // =========================================================
-        // 8) REJECTED — warehouse rejected the request
-        // =========================================================
-        $req8 = MaterialRequest::create([
-            'requested_by'   => $labManagers->first()->id,
-            'requester_type' => 'lab',
-            'clinic_id'      => null,
-            'status'         => 'rejected',
-            'notes'          => 'المواد المطلوبة غير متوفرة',
-            'warehouse_notes'=> 'سيتم توفيرها عند وصول فاتورة الشراء القادمة',
-            'created_at'     => now()->subDays(4),
-            'updated_at'     => now()->subDays(3),
-        ]);
+        // ---------------------------------------------------------------
+        // 2) Lab requests — more than 10
+        // ---------------------------------------------------------------
+        $labRequestCount = 12; // >10
 
-        if ($labMaterials->isNotEmpty()) {
-            MaterialRequestItem::create([
-                'material_request_id' => $req8->id,
-                'material_id'         => $labMaterials->last()->id,
-                'quantity_requested'  => 15,
-                'status'              => 'not_available',
-            ]);
+        for ($i = 0; $i < $labRequestCount; $i++) {
+            $this->createOneRequest(
+                requesterType: 'lab',
+                clinicId: null,
+                requestedBy: $labRequester->id,
+                materials: $labMaterials->isNotEmpty() ? $labMaterials : $materials,
+                baseDate: $augustStart->copy()->addDays(($i * 2) % 28),
+                statuses: $statuses,
+                newStatuses: $newStatuses,
+                totalRequests: $totalRequests,
+                totalItems: $totalItems,
+                totalNew: $totalNew
+            );
         }
 
+        $this->command->info("✅ MaterialRequestSeeder:");
+        $this->command->info("   • {$totalRequests} material requests total");
+        $this->command->info("   • Clinic requests: {$clinicRequestCount} (each clinic >7 when clinics exist)");
+        $this->command->info("   • Lab requests: {$labRequestCount}");
+        $this->command->info("   • {$totalItems} request items (no per-item status)");
+        $this->command->info("   • {$totalNew} new material requests");
+    }
+
+    private function createOneRequest(
+        string $requesterType,
+        ?int $clinicId,
+        int $requestedBy,
+        $materials,
+        Carbon $baseDate,
+        array $statuses,
+        array $newStatuses,
+        int &$totalRequests,
+        int &$totalItems,
+        int &$totalNew
+    ): void {
+        $seed = crc32($requesterType . ($clinicId ?? 0) . $baseDate->toDateString() . $totalRequests);
+
+        $status = $statuses[$seed % count($statuses)];
+
+        $request = MaterialRequest::create([
+            'requested_by'    => $requestedBy,
+            'requester_type'  => $requesterType,
+            'clinic_id'       => $clinicId,
+            'status'          => $status,
+            'notes'           => $requesterType === 'clinic'
+                ? 'طلب مواد للعيادة - آب 2026'
+                : 'طلب مواد للمخبر - آب 2026',
+            'warehouse_notes' => in_array($status, ['completed', 'rejected', 'cancelled'])
+                ? 'تمت المراجعة من المستودع'
+                : null,
+            'created_at'      => $baseDate->copy()->setTime(9 + ($seed % 8), ($seed % 50)),
+            'updated_at'      => $baseDate->copy()->addHours(1 + ($seed % 40)),
+        ]);
+
+        $totalRequests++;
+
+        // ---------- Material Request Items (1–4) ----------
+        // No status on items — warehouse completes the whole request
+        $itemCount = 1 + ($seed % 4);
+        $picked = $materials->shuffle()->take(min($itemCount, $materials->count()));
+
+        foreach ($picked as $idx => $mat) {
+            MaterialRequestItem::create([
+                'material_request_id' => $request->id,
+                'material_id'         => $mat->id,
+                'quantity_requested'  => 1 + (($seed + $idx) % 20),
+                'notes'               => null,
+            ]);
+            $totalItems++;
+        }
+
+        // ---------- New Material Requests (~40% of requests) ----------
+        if (($seed % 10) < 4) {
+            $newCount = 1 + ($seed % 2);
+
+            $sampleNew = [
+                [
+                    'material_name' => 'مادة طباعة سيليكون عالية الدقة',
+                    'company_name'  => '3M ESPE',
+                    'unit'          => 'علبة',
+                    'dosage'        => null,
+                ],
+                [
+                    'material_name' => 'أقراص زركون شفافة',
+                    'company_name'  => 'Ivoclar',
+                    'unit'          => 'قطعة',
+                    'dosage'        => null,
+                ],
+                [
+                    'material_name' => 'محلول تنظيف أدوات دقيق',
+                    'company_name'  => 'Dürr Dental',
+                    'unit'          => 'لتر',
+                    'dosage'        => null,
+                ],
+                [
+                    'material_name' => 'قفازات نيتريل خالية من البودرة',
+                    'company_name'  => 'Ansell',
+                    'unit'          => 'علبة',
+                    'dosage'        => null,
+                ],
+                [
+                    'material_name' => 'راتنج طباعة ثلاثية الأبعاد',
+                    'company_name'  => 'Formlabs',
+                    'unit'          => 'لتر',
+                    'dosage'        => null,
+                ],
+            ];
+
+            for ($n = 0; $n < $newCount; $n++) {
+                $sample = $sampleNew[($seed + $n) % count($sampleNew)];
+
+                NewMaterialRequest::create([
+                    'material_request_id' => $request->id,
+                    'material_name'       => $sample['material_name'],
+                    'company_name'        => $sample['company_name'],
+                    'unit'                => $sample['unit'],
+                    'quantity'            => 2 + (($seed + $n) % 15),
+                    'dosage'              => $sample['dosage'],
+                    'status'              => $newStatuses[($seed + $n) % count($newStatuses)],
+                ]);
+                $totalNew++;
+            }
+        }
     }
 }

@@ -22,11 +22,11 @@ return new class extends Migration
 
             $table->integer('quantity_requested');
 
-            $table->enum('status', [
-                'pending',
-                'fulfilled',
-                'not_available',
-            ])->default('pending');
+            // $table->enum('status', [
+            //     'pending',
+            //     'fulfilled',
+            //     'not_available',
+            // ])->default('pending');
 
             $table->text('notes')->nullable();
             $table->timestamps();

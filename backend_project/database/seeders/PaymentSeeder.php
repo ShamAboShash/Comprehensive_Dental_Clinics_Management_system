@@ -18,7 +18,7 @@ class PaymentSeeder extends Seeder
             return;
         }
 
-        $staffUser = User::find(3,'id');
+        $staffUser = User::whereIn('role', [1, 3])->where('is_active', true)->first();
 
         if (!$staffUser) {
             $this->command->warn('لا يوجد مستخدم بدور secretary/admin لاستخدامه كـ received_by، يرجى إضافة واحد.');

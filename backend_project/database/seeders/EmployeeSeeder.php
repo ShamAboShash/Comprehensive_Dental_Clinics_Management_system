@@ -122,7 +122,7 @@ class EmployeeSeeder extends Seeder
                 'phone'         => $data['phone'],
                 'gender'        => $data['gender'],
                 'role'          => $data['role'],
-                'is_active'        => false,
+                'is_active'        => true,
                 'profile_picture' => $profilePic,
                 // 'password'      => Hash::make('password'),
 

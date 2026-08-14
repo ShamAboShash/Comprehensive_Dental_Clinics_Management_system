@@ -5,9 +5,11 @@ use App\Http\Controllers\Admin\CenterController;
 use App\Http\Controllers\Admin\DentistController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\OpirationsController;
+
 use App\Http\Controllers\Auth\EmployeeAuthController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\PatientAuthController;
+
 use App\Http\Controllers\Dentist\AppointmentController;
 use App\Http\Controllers\Dentist\DentistProfileController;
 use App\Http\Controllers\Dentist\LabOrderController as DentistLabOrderController;
@@ -18,8 +20,11 @@ use App\Http\Controllers\Dentist\ToothTreatmentController;
 use App\Http\Controllers\Dentist\TreatmentController;
 use App\Http\Controllers\Dentist\TreatmentPhotoController;
 use App\Http\Controllers\Dentist\WorkScheduleController;
+
 use App\Http\Controllers\Employee\EmployeeProfileController;
+
 use App\Http\Controllers\Generals\ShowThingsController;
+
 use App\Http\Controllers\LabManager\LabDashboardController;
 use App\Http\Controllers\LabManager\LabItemController;
 use App\Http\Controllers\LabManager\LabOrderController;
@@ -29,6 +34,7 @@ use App\Http\Controllers\LabManager\MaterialRequestController;
 use App\Http\Controllers\LabManager\NotificationController;
 use App\Http\Controllers\LabManager\TechnicianController;
 use App\Http\Controllers\LabManager\WarehouseMaterialController;
+
 use App\Http\Controllers\Patient\DentistScheduleController;
 use App\Http\Controllers\Patient\PatientAppointmentController;
 use App\Http\Controllers\Patient\PatientComplaintController;
@@ -40,6 +46,7 @@ use App\Http\Controllers\Patient\PatientPrescriptionController;
 use App\Http\Controllers\Patient\PatientProfileController;
 use App\Http\Controllers\Patient\PatientTreatmentController;
 use App\Http\Controllers\Patient\PatientTreatmentPhotoController;
+
 use App\Http\Controllers\Secretary\AppointmentController as SecretaryAppointmentController;
 use App\Http\Controllers\Secretary\AttendanceController as SecretaryAttendanceController;
 use App\Http\Controllers\Secretary\ComplaintController as SecretaryComplaintController;
@@ -47,12 +54,14 @@ use App\Http\Controllers\Secretary\MaterialRequestController as SecretaryMateria
 use App\Http\Controllers\Secretary\OfferController as SecretaryOfferController;
 use App\Http\Controllers\Secretary\PatientController as SecretaryPatientController;
 use App\Http\Controllers\Secretary\WarehouseMaterialController as SecretaryWarehouseMaterialController;
+
 use App\Http\Controllers\WarehouseManager\InventoryController;
 use App\Http\Controllers\WarehouseManager\MaterialController;
 use App\Http\Controllers\WarehouseManager\MaterialRequestController as WarehouseMaterialRequestController;
 use App\Http\Controllers\WarehouseManager\PurchaseInvoiceController;
 use App\Http\Controllers\WarehouseManager\ReportController;
 use App\Http\Controllers\WarehouseManager\WarehouseStockController;
+
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -224,8 +233,8 @@ Route::prefix('secretary')->middleware(['auth:sanctum', 'active'])->group(functi
     Route::post('/toggleOffer/{id}', [SecretaryOfferController::class, 'toggle']);
 
     // Complaints
-    Route::get('/showAllComplaints', [SecretaryComplaintController::class, 'index']);
-    Route::get('/showComplaint/{id}', [SecretaryComplaintController::class, 'show']);
+    // Route::get('/showAllComplaints', [SecretaryComplaintController::class, 'index']);
+    // Route::get('/showComplaint/{id}', [SecretaryComplaintController::class, 'show']);
     Route::post('/addComplaint', [SecretaryComplaintController::class, 'store']);
     Route::post('/updateComplaintStatus/{id}', [SecretaryComplaintController::class, 'updateStatus']);
 });
