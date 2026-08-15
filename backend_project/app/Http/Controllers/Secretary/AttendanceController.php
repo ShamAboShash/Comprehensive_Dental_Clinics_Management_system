@@ -333,92 +333,61 @@ private function employeeWorksOnDay(
         ]);
     }
 
-    // /**
-    //  * 3. تغيير حالة الحضور / تعديل سجل
-    //  * POST /secretary/updateAttendance/{id}
-    //  */
-    // public function update(UpdateAttendanceRequest $request, int $id): JsonResponse
-    // {
-    //     $attendance = Attendance::find($id);
 
-    //     if (!$attendance) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'سجل الحضور غير موجود.',
-    //         ], 404);
-    //     }
-
-    //     $attendance->update([
-    //         'status'        => $request->status ?? $attendance->status,
-    //         'check_in'      => $request->has('check_in') ? $request->check_in : $attendance->check_in,
-    //         'check_out'     => $request->has('check_out') ? $request->check_out : $attendance->check_out,
-    //         'notes'         => $request->has('notes') ? $request->notes : $attendance->notes,
-    //         'registered_by' => $request->user()->id,
-    //     ]);
-
-    //     $attendance->load(['employee.user', 'registeredBy']);
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'message' => 'تم تحديث سجل الحضور بنجاح.',
-    //         'data'    => $this->formatAttendance($attendance),
-    //     ]);
-    // }
-
-
-    public function updateAttendanceOnLeave(Request $request, int $id): JsonResponse
+    public function markOnLeave(CheckInRequest $request): JsonResponse
     {
-        $attendance = Attendance::find($id);
+        $date = $request->date ?? now()->toDateString();
 
-        if (!$attendance) {
-            return response()->json([
-                'success' => false,
-                'message' => 'سجل الحضور غير موجود.',
-            ], 404);
-        }
-
-        $attendance->update([
-            'status'        => 'on_leave',
-            'check_in'      => null,
-            'check_out'     => null,
-            'notes'         => $request->has('notes') ? $request->notes : $attendance->notes,
-            'registered_by' => $request->user()->id,
-        ]);
+        $attendance = Attendance::updateOrCreate(
+            [
+                'employee_id' => $request->employee_id,
+                'date'        => $date,
+            ],
+            [
+                'status'        => 'on_leave',
+                'check_in'      => null,
+                'check_out'     => null,
+                'registered_by' => $request->user()->id,
+                'notes'         => $request->notes,
+            ]
+        );
 
         $attendance->load(['employee.user', 'registeredBy']);
 
         return response()->json([
             'success' => true,
-            'message' => 'تم تسجيل حالة الموظف (إجازة) بنجاح.',
+            'message' => 'تم تسجيل الإجازة بنجاح.',
             'data'    => $this->formatAttendance($attendance),
         ]);
     }
 
-
-    public function updateAttendanceLate(Request $request, int $id): JsonResponse
+    /**
+     * POST /secretary/markLate
+     * Body: employee_id, date?, check_in?, notes?
+     */
+    public function markLate(CheckInRequest $request): JsonResponse
     {
-        $attendance = Attendance::find($id);
+        $date    = $request->date ?? now()->toDateString();
+        $checkIn = $request->check_in ?? now()->format('H:i:s');
 
-        if (!$attendance) {
-            return response()->json([
-                'success' => false,
-                'message' => 'سجل الحضور غير موجود.',
-            ], 404);
-        }
-
-        $attendance->update([
-            'status'        => 'late',
-            'check_in'      => $request->has('check_in') ? $request->check_in : ($attendance->check_in ?? now()->format('H:i:s')),
-            'check_out'     => $request->has('check_out') ? $request->check_out : $attendance->check_out,
-            'notes'         => $request->has('notes') ? $request->notes : $attendance->notes,
-            'registered_by' => $request->user()->id,
-        ]);
+        $attendance = Attendance::updateOrCreate(
+            [
+                'employee_id' => $request->employee_id,
+                'date'        => $date,
+            ],
+            [
+                'status'        => 'late',
+                'check_in'      => $checkIn,
+                'registered_by' => $request->user()->id,
+                'notes'         => $request->notes,
+            ]
+        );
 
         $attendance->load(['employee.user', 'registeredBy']);
 
         return response()->json([
             'success' => true,
-            'message' => 'تم تسجيل حالة الموظف (متأخر) بنجاح.',
+            'message' => 'تم تسجيل التأخير بنجاح.',
             'data'    => $this->formatAttendance($attendance),
         ]);
     }

@@ -211,7 +211,8 @@ Route::prefix('secretary')->middleware(['auth:sanctum', 'active'])->group(functi
     Route::post('/checkIn', [SecretaryAttendanceController::class, 'checkIn']);
     Route::post('/checkOut', [SecretaryAttendanceController::class, 'checkOut']);
     Route::post('/markAbsent', [SecretaryAttendanceController::class, 'markAbsent']);
-    Route::post('/updateAttendance/{id}', [SecretaryAttendanceController::class, 'update']);
+    Route::post('/updateAttendanceOnLeave', [SecretaryAttendanceController::class, 'markOnLeave']);
+    Route::post('/updateAttendanceLate', [SecretaryAttendanceController::class, 'markLate']);
 
     // Patients
     Route::get('/showAllPatients', [SecretaryPatientController::class, 'index']);
@@ -221,6 +222,7 @@ Route::prefix('secretary')->middleware(['auth:sanctum', 'active'])->group(functi
 
     //dentists
     Route::get('/showAllDentists', [SecretaryPatientController::class, 'indexDentist']);
+
     // Payments
     Route::post('/addPayment', [SecretaryPatientController::class, 'addPayment']);
     Route::get('/patientInvoices/{patientId}', [SecretaryPatientController::class, 'patientInvoices']);
@@ -235,13 +237,11 @@ Route::prefix('secretary')->middleware(['auth:sanctum', 'active'])->group(functi
     Route::post('/toggleOffer/{id}', [SecretaryOfferController::class, 'toggle']);
 
     // Complaints
-    // Route::get('/showAllComplaints', [SecretaryComplaintController::class, 'index']);
-    // Route::get('/showComplaint/{id}', [SecretaryComplaintController::class, 'show']);
     Route::post('/addComplaint', [SecretaryComplaintController::class, 'store']);
     Route::post('/updateComplaintStatus/{id}', [SecretaryComplaintController::class, 'updateStatus']);
 });
 
-// 2
+// 40
 
 // ====================== ADMIN ======================
 
@@ -250,6 +250,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'active'])->group(function (
     Route::get('/showProfile', [AdminProfileController::class, 'showProfile']);
     Route::get('/showPatientProfile/{patientId}', [EmployeeController::class,     'showPatientProfile']);
     Route::post('/toggleUser/{user}', [EmployeeController::class,     'toggleUser']);
+
     // dentist
     Route::post('/createDentist', [DentistController::class,      'createDentist']);
     Route::post('/updateDentist/{user}', [DentistController::class,      'updateDentist']);
@@ -257,37 +258,46 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'active'])->group(function (
     Route::get('/dentistMonthlyAttendance/{dentist}', [DentistController::class, 'dentistMonthly']);
     Route::post('/updateDentistWorkSchedule/{schedule}', [DentistController::class, 'updateDentistWS']);
     Route::get('/showDentistBySpecialization/{specializationId}', [DentistController::class, 'bySpecialization']);
+
     // center info
     Route::get('/warehouseInventory', [CenterController::class, 'getWarehouseInventory']);
+
     // employee
     Route::get('/showEmployeeDetails/{employeeId}', [EmployeeController::class,     'showEmployeeDetails']);
     Route::post('/createEmployee', [EmployeeController::class,     'createEmployee']);
     Route::post('/updateEmployee/{employee}', [EmployeeController::class,     'updateEmployee']);
     Route::get('/employeeMonthlyAttendance/{employee}', [EmployeeController::class, 'employeeMonthly']);
     Route::post('/updateEmployeeWorkSchedule/{schedule}', [EmployeeController::class, 'updateEmployeeWS']);
+
     // clinic
     Route::get('/showAllClinics', [CenterController::class, 'ClinicIndex']);
     Route::post('/addClinic', [CenterController::class, 'clinicStore']);
     Route::post('/updateClinic/{clinic}', [CenterController::class, 'clinicUpdate']);
+
     // Specialization
     Route::post('/addSpecialization', [OpirationsController::class, 'specializationStore']);
     Route::post('/updateSpecialization/{specialization}', [OpirationsController::class, 'specializationUpdate']);
     Route::post('/deleteSpecialization/{specialization}', [OpirationsController::class, 'specializationDestroy']);
+
     // Treatment Types
     Route::post('/addTreatmentType', [OpirationsController::class, 'treatmentStore']);
     Route::post('/updateTreatmentType/{treatmentType}', [OpirationsController::class, 'treatmentUpdate']);
     Route::post('/deleteTreatmentType/{treatmentType}', [OpirationsController::class, 'treatmentDestroy']);
+
     // Medications
     Route::post('/addMedication', [OpirationsController::class, 'medicationStore']);
     Route::post('/updateMedication/{medication}', [OpirationsController::class, 'medicationUpdate']);
     Route::post('/deleteMedication/{medication}', [OpirationsController::class, 'medicationDestroy']);
+
     // Procedures
     Route::post('/addProcedure', [OpirationsController::class, 'procedureStore']);
     Route::post('/updateProcedure/{procedure}', [OpirationsController::class, 'procedureUpdate']);
     Route::post('/deleteProcedure/{procedure}', [OpirationsController::class, 'procedureDestroy']);
+
     // Complaints
     Route::get('/showComplaints', [CenterController::class, 'complaintIndex']);
     Route::post('/updateComplaintStatus/{complaint}', [CenterController::class, 'complaintUpdate']);
+
     // Center info
     Route::post('/updateCenterInfo', [CenterController::class, 'updateCenterInfo']);
 });
@@ -473,4 +483,6 @@ Route::prefix('warehouseManager')->middleware(['auth:sanctum', 'active'])->group
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::patch('notifications/{id}/read', [NotificationController::class, 'markAsRead']);
 
+
 });
+//28
