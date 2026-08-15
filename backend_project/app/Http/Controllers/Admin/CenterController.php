@@ -18,25 +18,6 @@ use Carbon\Carbon;
 
 class CenterController extends Controller
 {
-// public function showCenterInfo()
-//     {
-//         Gate::authorize('is-admin');
-
-//         $centerInfo = CenterInfo::first();
-
-//         if (!$centerInfo) {
-//             return response()->json([
-//                 'success' => false,
-//                 'message' => 'معلومات المركز غير موجودة',
-//             ], 404);
-//         }
-
-//         return response()->json([
-//             'success' => true,
-//             'data'    => $this->formatCenterInfo($centerInfo),
-//         ]);
-//     }
-
     // PATCH/PUT center info
     public function updateCenterInfo(Request $request)
     {
@@ -53,7 +34,6 @@ class CenterController extends Controller
             'facebook_url'    => 'nullable|url|max:255',
             'instagram_url'   => 'nullable|url|max:255',
             'whatsapp_number' => 'nullable|string|max:50',
-            'logo'            => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
         $centerInfo = CenterInfo::first() ?? new CenterInfo();
@@ -91,7 +71,7 @@ class CenterController extends Controller
     // GET all clinics
     public function ClinicIndex(): JsonResponse
     {
-        Gate::authorize('is-admin');
+        Gate::authorize('is-admin-secretary');
 
         $clinics = Clinic::with('specialization')->orderBy('id')->get();
 
@@ -164,7 +144,7 @@ class CenterController extends Controller
 
     public function clinicShow(int $id): JsonResponse
 {
-    Gate::authorize('is-admin');
+    Gate::authorize('is-admin-secretary');
 
     $clinic = Clinic::with('specialization')->find($id);
 

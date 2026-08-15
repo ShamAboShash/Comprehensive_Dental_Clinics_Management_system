@@ -19,10 +19,6 @@ use App\Models\Dentist;
 
 class PatientController extends Controller
 {
-    public function __construct()
-    {
-        Gate::authorize('is-secretary');
-    }
 
     /**
      * 28. عرض كل المرضى
@@ -30,6 +26,9 @@ class PatientController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+
+            Gate::authorize('is-secretary');
+
         $query = Patient::with('user')
             ->whereHas('user', function ($q) use ($request) {
                 if ($request->filled('search')) {
@@ -72,6 +71,9 @@ class PatientController extends Controller
      */
     public function show(int $id): JsonResponse
     {
+
+            Gate::authorize('is-secretary');
+
         $patient = Patient::with([
             'user',
             'treatments.treatmentType',
@@ -158,6 +160,9 @@ class PatientController extends Controller
      */
     public function store(StorePatientRequest $request): JsonResponse
     {
+
+            Gate::authorize('is-secretary');
+
         DB::beginTransaction();
 
         try {
@@ -235,6 +240,9 @@ class PatientController extends Controller
      */
     public function update(UpdatePatientRequest $request, int $id): JsonResponse
     {
+
+            Gate::authorize('is-secretary');
+
         $patient = Patient::with('user')->find($id);
 
         if (!$patient || !$patient->user) {
@@ -325,6 +333,9 @@ class PatientController extends Controller
  */
     public function addPayment(StorePaymentRequest $request): JsonResponse
     {
+
+            Gate::authorize('is-secretary');
+
         $invoice = Invoice::with(['patient.user', 'treatment.treatmentType', 'payments'])
             ->find($request->invoice_id);
 
@@ -427,6 +438,8 @@ class PatientController extends Controller
      */
     public function patientInvoices(int $patientId): JsonResponse
     {
+                Gate::authorize('is-secretary');
+
         $patient = Patient::with('user')->find($patientId);
 
         if (!$patient) {
@@ -475,6 +488,8 @@ class PatientController extends Controller
      */
     public function showInvoice(int $invoiceId): JsonResponse
     {
+                Gate::authorize('is-admin-secretary');
+
         $invoice = Invoice::with([
             'patient.user',
             'treatment.treatmentType',

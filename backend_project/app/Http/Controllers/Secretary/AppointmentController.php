@@ -86,6 +86,68 @@ class AppointmentController extends Controller
         ]);
     }
 
+
+/**
+ * مواعيد كل الأطباء لهذا الأسبوع
+ * GET /secretary/weeklyAppointments
+ * GET /secretary/weeklyAppointments?date=2026-08-15
+ */
+    public function weekly(Request $request): JsonResponse
+    {
+        $base = $request->filled('date')
+            ? Carbon::parse($request->date)
+            : Carbon::now();
+
+        // Saturday → Friday
+        $start = $base->copy()->startOfWeek(Carbon::SATURDAY)->startOfDay();
+        $end   = $base->copy()->endOfWeek(Carbon::FRIDAY)->endOfDay();
+
+        $appointments = Appointment::with([
+            'patient.user',
+            'dentist.employee.user',
+            'appointmentType',
+            'treatment.treatmentType',
+        ])
+            ->whereBetween('appointment_time', [$start, $end])
+            ->orderBy('appointment_time')
+            ->get();
+
+        // Group by dentist
+        // $byDentist = $appointments
+        //     ->groupBy('dentist_id')
+        //     ->map(function ($rows) {
+        //         $first = $rows->first();
+
+        //         return [
+        //             'dentist_id'   => $first->dentist_id,
+        //             'dentist_name' => $first->dentist?->employee?->user?->name,
+        //             'count'        => $rows->count(),
+        //             'appointments' => $rows->map(fn ($a) => $this->format($a))->values(),
+        //         ];
+        //     })
+        //     ->values();
+
+        // Also group by day (useful for calendar UI)
+        $byDay = $appointments
+            ->groupBy(fn ($a) => $a->appointment_time?->toDateString())
+            ->map(fn ($rows, $date) => [
+                'date'  => $date,
+                'day'   => strtolower(Carbon::parse($date)->format('l')),
+                'count' => $rows->count(),
+                'appointments' => $rows->map(fn ($a) => $this->format($a))->values(),
+            ])
+            ->values();
+
+        return response()->json([
+            'success'    => true,
+            'start_date' => $start->toDateString(),
+            'end_date'   => $end->toDateString(),
+            'count'      => $appointments->count(),
+            // 'by_dentist' => $byDentist,
+            'by_day'     => $byDay,
+        ]);
+    }
+
     /**
      * 5. عرض المواعيد الشهرية
      * GET /secretary/monthlyAppointments?year=2026&month=8

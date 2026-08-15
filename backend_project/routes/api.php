@@ -5,6 +5,8 @@ use App\Http\Controllers\Admin\CenterController;
 use App\Http\Controllers\Admin\DentistController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\OpirationsController;
+use App\Http\Controllers\Admin\ReportController as AdminReportController;
+use App\Http\Controllers\Admin\SalaryPaymentController;
 
 use App\Http\Controllers\Auth\EmployeeAuthController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -185,6 +187,7 @@ Route::prefix('secretary')->middleware(['auth:sanctum', 'active'])->group(functi
     // Appointments
     Route::get('/showAllAppointments', [SecretaryAppointmentController::class, 'index']);
     Route::get('/dailyAppointments', [SecretaryAppointmentController::class, 'daily']);
+    Route::get('/weeklyAppointments', [SecretaryAppointmentController::class, 'weekly']);
     Route::get('/monthlyAppointments', [SecretaryAppointmentController::class, 'monthly']);
     Route::get('/showAppointment/{id}', [SecretaryAppointmentController::class, 'show']);
     Route::post('/addAppointment', [SecretaryAppointmentController::class, 'store']);
@@ -304,7 +307,16 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'active'])->group(function (
     // Center info
     Route::post('/updateCenterInfo', [CenterController::class, 'updateCenterInfo']);
     Route::post('/updateWorkHours', [CenterController::class, 'updateWorkHours']);
-    
+
+    // reports 
+    Route::get('/reports', [AdminReportController::class, 'show']);
+    Route::get('/inventory', [AdminReportController::class, 'show']);
+
+    //salary payment
+    Route::post('/paySalary',     [SalaryPaymentController::class, 'pay']);
+    Route::post('/payAllSalary', [SalaryPaymentController::class, 'payAll']);
+
+
 });
 
 // 35
