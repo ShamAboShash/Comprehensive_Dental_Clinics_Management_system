@@ -248,6 +248,7 @@ Route::prefix('secretary')->middleware(['auth:sanctum', 'active'])->group(functi
 Route::prefix('admin')->middleware(['auth:sanctum', 'active'])->group(function () {
     // profile
     Route::get('/showProfile', [AdminProfileController::class, 'showProfile']);
+    Route::post('/updateAdminProfile', [AdminProfileController::class, 'updateProfile']);
     Route::get('/showPatientProfile/{patientId}', [EmployeeController::class,     'showPatientProfile']);
     Route::post('/toggleUser/{user}', [EmployeeController::class,     'toggleUser']);
 
@@ -260,7 +261,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'active'])->group(function (
     Route::get('/showDentistBySpecialization/{specializationId}', [DentistController::class, 'bySpecialization']);
 
     // center info
-    Route::get('/warehouseInventory', [CenterController::class, 'getWarehouseInventory']);
+    // Route::get('/warehouseInventory', [CenterController::class, 'getWarehouseInventory']);
 
     // employee
     Route::get('/showEmployeeDetails/{employeeId}', [EmployeeController::class,     'showEmployeeDetails']);
@@ -271,8 +272,10 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'active'])->group(function (
 
     // clinic
     Route::get('/showAllClinics', [CenterController::class, 'ClinicIndex']);
+    Route::get('/showClinicDetails/{clinic}', [CenterController::class, 'ClinicShow']);
     Route::post('/addClinic', [CenterController::class, 'clinicStore']);
     Route::post('/updateClinic/{clinic}', [CenterController::class, 'clinicUpdate']);
+
 
     // Specialization
     Route::post('/addSpecialization', [OpirationsController::class, 'specializationStore']);
@@ -300,6 +303,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'active'])->group(function (
 
     // Center info
     Route::post('/updateCenterInfo', [CenterController::class, 'updateCenterInfo']);
+    Route::post('/updateWorkHours', [CenterController::class, 'updateWorkHours']);
+    
 });
 
 // 35

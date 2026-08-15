@@ -9,10 +9,12 @@ use App\Models\CenterInfo;
 use App\Models\WarehouseStock;
 use App\Models\Complaint;
 use App\Models\Clinic;
+use App\Models\Appointment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 class CenterController extends Controller
 {
@@ -73,18 +75,18 @@ class CenterController extends Controller
         ]);
     }
 
-    public function getWarehouseInventory(): JsonResponse
-    {
-        Gate::authorize('is-admin');
+    // public function getWarehouseInventory(): JsonResponse
+    // {
+    //     Gate::authorize('is-admin');
 
-        $stocks = WarehouseStock::with('material')->orderByDesc('id')->get();
+    //     $stocks = WarehouseStock::with('material')->orderByDesc('id')->get();
 
-        return response()->json([
-            'success' => true,
-            'count'   => $stocks->count(),
-            'data'    => WarehouseMaterialResource::collection($stocks),
-        ]);
-    }
+    //     return response()->json([
+    //         'success' => true,
+    //         'count'   => $stocks->count(),
+    //         'data'    => WarehouseMaterialResource::collection($stocks),
+    //     ]);
+    // }
 
     // GET all clinics
     public function ClinicIndex(): JsonResponse
@@ -158,6 +160,122 @@ class CenterController extends Controller
             'data'    => $this->formatClinic($clinic),
         ]);
     }
+
+
+    public function clinicShow(int $id): JsonResponse
+{
+    Gate::authorize('is-admin');
+
+    $clinic = Clinic::with('specialization')->find($id);
+
+    if (!$clinic) {
+        return response()->json([
+            'success' => false,
+            'message' => 'العيادة غير موجودة',
+        ], 404);
+    }
+
+    // Dentists linked to this clinic
+    $dentists = $clinic->dentists()
+        ->with(['specialization', 'employee.user'])
+        ->get();
+
+    $dentistIds = $dentists->pluck('id');
+
+    $dentistsData = $dentists->map(function ($dentist) {
+        $user = $dentist->employee?->user;
+
+        return [
+            'id'             => $dentist->id,
+            'name'           => $user?->name,
+            'phone'          => $user?->phone,
+            'specialization' => $dentist->specialization ? [
+                'id'      => $dentist->specialization->id,
+                'name'    => $dentist->specialization->name,
+                'name_en' => $dentist->specialization->name_en ?? null,
+            ] : null,
+        ];
+    })->values();
+
+    // Today's appointments for dentists of this clinic
+    // (appointments have no clinic_id — linked via dentist_clinics)
+    $today = Carbon::today();
+
+    $appointments = Appointment::with([
+            'patient.user:id,name,phone',
+            'dentist.employee.user:id,name',
+            'appointmentType:id,name,name_en',
+        ])
+        ->whereIn('dentist_id', $dentistIds)
+        ->whereDate('appointment_time', $today)
+        ->orderBy('appointment_time')
+        ->get()
+        ->map(function ($apt) {
+            return [
+                'id'               => $apt->id,
+                'appointment_time' => $apt->appointment_time?->format('Y-m-d H:i'),
+                'status'           => $apt->status,
+                'type'             => $apt->type,
+                'patient'          => $apt->patient?->user ? [
+                    'id'    => $apt->patient->id,
+                    'name'  => $apt->patient->user->name,
+                ] : null,
+                'dentist'          => [
+                    'id'   => $apt->dentist_id,
+                    'name' => $apt->dentist?->employee?->user?->name,
+                ],
+                'appointment_type' => $apt->appointmentType ? [
+                    'id'   => $apt->appointmentType->id,
+                    'name' => $apt->appointmentType->name,
+                ] : null,
+            ];
+        })->values();
+
+    return response()->json([
+        'success' => true,
+        'data'    => [
+            'clinic'             => $this->formatClinic($clinic),
+            'dentists'           => $dentistsData,
+            'today_appointments' => $appointments,
+            'date'               => $today->toDateString(),
+        ],
+    ]);
+}
+
+// In CenterController (admin)
+
+public function updateWorkHours(Request $request)
+{
+    Gate::authorize('is-admin'); // or view-admin-profile if is-admin is not defined
+
+    $validated = $request->validate([
+        'work_start_time' => 'required|date_format:H:i,H:i:s',
+        'work_end_time'   => 'required|date_format:H:i,H:i:s|after:work_start_time',
+    ]);
+
+    $centerInfo = CenterInfo::first();
+
+    if (!$centerInfo) {
+        return response()->json([
+            'success' => false,
+            'message' => 'معلومات المركز غير موجودة',
+        ], 404);
+    }
+
+    $centerInfo->update([
+        'work_start_time' => $validated['work_start_time'],
+        'work_end_time'   => $validated['work_end_time'],
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'تم تحديث أوقات العمل بنجاح',
+        'data'    => [
+            'work_start_time' => substr((string) $centerInfo->work_start_time, 0, 5),
+            'work_end_time'   => substr((string) $centerInfo->work_end_time, 0, 5),
+        ],
+    ]);
+}
 
     public function complaintIndex(Request $request): JsonResponse
     {

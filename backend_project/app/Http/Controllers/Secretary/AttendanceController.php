@@ -16,10 +16,10 @@ use Illuminate\Support\Facades\Gate;
 
 class AttendanceController extends Controller
 {
-    public function __construct()
-    {
-        Gate::authorize('is-secretary');
-    }
+    // public function __construct()
+    // {
+    //     Gate::authorize('is-secretary');
+    // }
 
     /**
  * 1. جدول حضور يومي
@@ -27,6 +27,9 @@ class AttendanceController extends Controller
  */
 public function daily(Request $request): JsonResponse
 {
+        Gate::authorize('is-admin-secretary');
+
+
     $date = $request->query('date', now()->toDateString());
     $dayOfWeek = strtolower(Carbon::parse($date)->format('l')); // monday, tuesday, ...
 
@@ -110,6 +113,8 @@ public function daily(Request $request): JsonResponse
  */
 public function monthly(Request $request): JsonResponse
 {
+            Gate::authorize('is-secretary');
+
     $year  = (int) $request->query('year', now()->year);
     $month = (int) $request->query('month', now()->month);
 
@@ -244,6 +249,8 @@ private function employeeWorksOnDay(
      */
     public function checkIn(CheckInRequest $request): JsonResponse
     {
+                Gate::authorize('is-secretary');
+
         $date    = $request->date ?? now()->toDateString();
         $checkIn = $request->check_in ?? now()->format('H:i:s');
 
@@ -291,6 +298,8 @@ private function employeeWorksOnDay(
      */
     public function checkOut(CheckOutRequest $request): JsonResponse
     {
+                Gate::authorize('is-secretary');
+
         $date     = $request->date ?? now()->toDateString();
         $checkOut = $request->check_out ?? now()->format('H:i:s');
 
@@ -336,6 +345,8 @@ private function employeeWorksOnDay(
 
     public function markOnLeave(CheckInRequest $request): JsonResponse
     {
+                Gate::authorize('is-secretary');
+
         $date = $request->date ?? now()->toDateString();
 
         $attendance = Attendance::updateOrCreate(
@@ -367,6 +378,8 @@ private function employeeWorksOnDay(
      */
     public function markLate(CheckInRequest $request): JsonResponse
     {
+                Gate::authorize('is-secretary');
+
         $date    = $request->date ?? now()->toDateString();
         $checkIn = $request->check_in ?? now()->format('H:i:s');
 
@@ -398,6 +411,8 @@ private function employeeWorksOnDay(
      */
     public function markAbsent(CheckInRequest $request): JsonResponse
     {
+                Gate::authorize('is-secretary');
+
         $date = $request->date ?? now()->toDateString();
 
         $existing = Attendance::where('employee_id', $request->employee_id)

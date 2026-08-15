@@ -16,7 +16,7 @@ class OfferController extends Controller
 {
     public function __construct()
     {
-        Gate::authorize('is-secretary');
+        Gate::authorize('is-admin-secretary');
     }
 
     /**
