@@ -14,10 +14,12 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('phone')->nullable();
             $table->string('email')->nullable();
-            $table->string('logo_path')->nullable();
             $table->string('facebook_url')->nullable();
             $table->string('instagram_url')->nullable();
             $table->string('whatsapp_number')->nullable();
+            $table->string('address')->nullable();
+            $table->time('work_start_time')->nullable();
+            $table->time('work_end_time')->nullable();
             $table->timestamps();
         });
     }

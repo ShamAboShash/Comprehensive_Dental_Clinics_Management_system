@@ -13,9 +13,11 @@ class CenterInfo extends Model
         'description',
         'phone',
         'email',
-        'logo_path',
         'facebook_url',
         'instagram_url',
         'whatsapp_number',
+        'address',
+        'work_start_time',
+        'work_end_time',
     ];
 }

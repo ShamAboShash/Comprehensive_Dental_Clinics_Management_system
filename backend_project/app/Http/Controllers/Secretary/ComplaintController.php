@@ -107,51 +107,51 @@ class ComplaintController extends Controller
      * 27. تعديل حالة الشكوى
      * POST /secretary/updateComplaintStatus/{id}
      */
-    public function updateStatus(UpdateComplaintStatusRequest $request, int $id): JsonResponse
-    {
-        $complaint = Complaint::with(['patient.user', 'submittedBy'])->find($id);
+    // public function updateStatus(UpdateComplaintStatusRequest $request, int $id): JsonResponse
+    // {
+    //     $complaint = Complaint::with(['patient.user', 'submittedBy'])->find($id);
 
-        if (!$complaint) {
-            return response()->json([
-                'success' => false,
-                'message' => 'الشكوى غير موجودة.',
-            ], 404);
-        }
+    //     if (!$complaint) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'الشكوى غير موجودة.',
+    //         ], 404);
+    //     }
 
-        $current = $complaint->status;
-        $new     = $request->status;
+    //     $current = $complaint->status;
+    //     $new     = $request->status;
 
-        // Allowed transitions for secretary
-        $allowed = match ($current) {
-            'pending'   => ['in_review', 'resolved', 'rejected'],
-            'in_review' => ['resolved', 'rejected', 'pending'],
-            'resolved', 'rejected' => [], // final — admin can reopen if needed
-            default     => [],
-        };
+    //     // Allowed transitions for secretary
+    //     $allowed = match ($current) {
+    //         'pending'   => ['in_review', 'resolved', 'rejected'],
+    //         'in_review' => ['resolved', 'rejected', 'pending'],
+    //         'resolved', 'rejected' => [], // final — admin can reopen if needed
+    //         default     => [],
+    //     };
 
-        if (!in_array($new, $allowed, true)) {
-            return response()->json([
-                'success' => false,
-                'message' => "لا يمكن تغيير حالة الشكوى من '{$current}' إلى '{$new}'.",
-            ], 422);
-        }
+    //     if (!in_array($new, $allowed, true)) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => "لا يمكن تغيير حالة الشكوى من '{$current}' إلى '{$new}'.",
+    //         ], 422);
+    //     }
 
-        $complaint->update([
-            'status'         => $new,
-            'priority'       => $request->priority ?? $complaint->priority,
-            'admin_response' => $request->has('admin_response')
-                ? $request->admin_response
-                : $complaint->admin_response,
-        ]);
+    //     $complaint->update([
+    //         'status'         => $new,
+    //         'priority'       => $request->priority ?? $complaint->priority,
+    //         'admin_response' => $request->has('admin_response')
+    //             ? $request->admin_response
+    //             : $complaint->admin_response,
+    //     ]);
 
-        $complaint->load(['patient.user', 'submittedBy']);
+    //     $complaint->load(['patient.user', 'submittedBy']);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'تم تحديث حالة الشكوى بنجاح.',
-            'data'    => $this->format($complaint),
-        ]);
-    }
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'تم تحديث حالة الشكوى بنجاح.',
+    //         'data'    => $this->format($complaint),
+    //     ]);
+    // }
 
     private function format(Complaint $c): array
     {

@@ -22,24 +22,20 @@ class CenterController extends Controller
 
 //         $centerInfo = CenterInfo::first();
 
+//         if (!$centerInfo) {
+//             return response()->json([
+//                 'success' => false,
+//                 'message' => 'معلومات المركز غير موجودة',
+//             ], 404);
+//         }
+
 //         return response()->json([
 //             'success' => true,
-//             'data'    => [
-//                 'id'              => $centerInfo->id,
-//             'name'            => $centerInfo->name,
-//             'description'     => $centerInfo->description,
-//             'phone'           => $centerInfo->phone,
-//             'email'           => $centerInfo->email,
-//             'facebook_url'    => $centerInfo->facebook_url,
-//             'instagram_url'   => $centerInfo->instagram_url,
-//             'whatsapp_number' => $centerInfo->whatsapp_number,
-//             'logo_url'        => $centerInfo->logo_path
-//                 ? asset(Storage::url($centerInfo->logo_path))
-//                 : null,
-//             ],
+//             'data'    => $this->formatCenterInfo($centerInfo),
 //         ]);
 //     }
 
+    // PATCH/PUT center info
     public function updateCenterInfo(Request $request)
     {
         Gate::authorize('is-admin');
@@ -49,6 +45,9 @@ class CenterController extends Controller
             'description'     => 'nullable|string',
             'phone'           => 'nullable|string|max:50',
             'email'           => 'nullable|email|max:255',
+            'address'         => 'nullable|string|max:500',
+            'work_start_time' => 'nullable|date_format:H:i,H:i:s',
+            'work_end_time'   => 'nullable|date_format:H:i,H:i:s|after:work_start_time',
             'facebook_url'    => 'nullable|url|max:255',
             'instagram_url'   => 'nullable|url|max:255',
             'whatsapp_number' => 'nullable|string|max:50',
@@ -70,19 +69,7 @@ class CenterController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'تم تحديث معلومات المركز بنجاح',
-            'data'    => [
-            'id'              => $centerInfo->id,
-            'name'            => $centerInfo->name,
-            'description'     => $centerInfo->description,
-            'phone'           => $centerInfo->phone,
-            'email'           => $centerInfo->email,
-            'facebook_url'    => $centerInfo->facebook_url,
-            'instagram_url'   => $centerInfo->instagram_url,
-            'whatsapp_number' => $centerInfo->whatsapp_number,
-            'logo_url'        => $centerInfo->logo_path
-                ? asset(Storage::url($centerInfo->logo_path))
-                : null,
-            ],
+            'data'    => $this->formatCenterInfo($centerInfo),
         ]);
     }
 
@@ -99,73 +86,76 @@ class CenterController extends Controller
         ]);
     }
 
+    // GET all clinics
     public function ClinicIndex(): JsonResponse
     {
         Gate::authorize('is-admin');
 
-        $clinics = Clinic::orderBy('id')->get();
+        $clinics = Clinic::with('specialization')->orderBy('id')->get();
 
         return response()->json([
             'success' => true,
             'count'   => $clinics->count(),
-            'data'    => $clinics->map(fn ($clinic) => [
-                'id'          => $clinic->id,
-                'name'        => $clinic->name,
-                'room_number' => $clinic->room_number,
-                'is_active'   => (bool) $clinic->is_active,
-            ])->values(),
+            'data'    => $clinics->map(fn ($clinic) => $this->formatClinic($clinic))->values(),
         ]);
     }
 
+    // POST create clinic
     public function clinicStore(Request $request): JsonResponse
     {
         Gate::authorize('is-admin');
 
         $validated = $request->validate([
-            'name'        => 'required|string|max:255',
-            'room_number' => 'required|string|max:50|unique:clinics,room_number',
-            'is_active'   => 'sometimes|boolean',
+            'name'              => 'required|string|max:255',
+            'room_number'       => 'required|string|max:50|unique:clinics,room_number',
+            'floor'             => 'nullable|string|max:50',
+            'equipments'        => 'nullable|string',
+            'notes'             => 'nullable|string',
+            'specialization_id' => 'nullable|exists:specializations,id',
+            'is_active'         => 'sometimes|boolean',
         ]);
 
         $clinic = Clinic::create([
-            'name'        => $validated['name'],
-            'room_number' => $validated['room_number'],
-            'is_active'   => $validated['is_active'] ?? true,
+            'name'              => $validated['name'],
+            'room_number'       => $validated['room_number'],
+            'floor'             => $validated['floor'] ?? null,
+            'equipments'        => $validated['equipments'] ?? null,
+            'notes'             => $validated['notes'] ?? null,
+            'specialization_id' => $validated['specialization_id'] ?? null,
+            'is_active'         => $validated['is_active'] ?? true,
         ]);
+
+        $clinic->load('specialization');
 
         return response()->json([
             'success' => true,
             'message' => 'تمت إضافة العيادة بنجاح',
-            'data'    => [
-            'id'          => $clinic->id,
-            'name'        => $clinic->name,
-            'room_number' => $clinic->room_number,
-            'is_active'   => $clinic->is_active,
-        ],
+            'data'    => $this->formatClinic($clinic),
         ], 201);
     }
 
+    // PUT/PATCH update clinic
     public function clinicUpdate(Request $request, Clinic $clinic): JsonResponse
     {
         Gate::authorize('is-admin');
 
         $validated = $request->validate([
-            'name'        => 'sometimes|required|string|max:255',
-            'room_number' => 'sometimes|required|string|max:50|unique:clinics,room_number,' . $clinic->id,
-            'is_active'   => 'sometimes|boolean',
+            'name'              => 'sometimes|required|string|max:255',
+            'room_number'       => 'sometimes|required|string|max:50|unique:clinics,room_number,' . $clinic->id,
+            'floor'             => 'nullable|string|max:50',
+            'equipments'        => 'nullable|string',
+            'notes'             => 'nullable|string',
+            'specialization_id' => 'nullable|exists:specializations,id',
+            'is_active'         => 'sometimes|boolean',
         ]);
 
         $clinic->update($validated);
+        $clinic->load('specialization');
 
         return response()->json([
             'success' => true,
             'message' => 'تم تعديل معلومات العيادة بنجاح',
-            'data'    => [
-                'id'          => $clinic->id,
-                'name'        => $clinic->name,
-                'room_number' => $clinic->room_number,
-                'is_active'   => $clinic->is_active,
-            ],
+            'data'    => $this->formatClinic($clinic),
         ]);
     }
 
@@ -219,4 +209,45 @@ class CenterController extends Controller
         ]);
         }
 
+
+        private function formatCenterInfo(CenterInfo $centerInfo): array
+    {
+        return [
+            'id'              => $centerInfo->id,
+            'name'            => $centerInfo->name,
+            'description'     => $centerInfo->description,
+            'phone'           => $centerInfo->phone,
+            'email'           => $centerInfo->email,
+            'address'         => $centerInfo->address,
+            'work_start_time' => $centerInfo->work_start_time
+                ? substr((string) $centerInfo->work_start_time, 0, 5) // HH:MM
+                : null,
+            'work_end_time'   => $centerInfo->work_end_time
+                ? substr((string) $centerInfo->work_end_time, 0, 5)
+                : null,
+            'facebook_url'    => $centerInfo->facebook_url,
+            'instagram_url'   => $centerInfo->instagram_url,
+            'whatsapp_number' => $centerInfo->whatsapp_number,
+
+        ];
+    }
+
+    private function formatClinic(Clinic $clinic): array
+    {
+        return [
+            'id'                => $clinic->id,
+            'name'              => $clinic->name,
+            'room_number'       => $clinic->room_number,
+            'floor'             => $clinic->floor,
+            'equipments'        => $clinic->equipments,
+            'notes'             => $clinic->notes,
+            'specialization_id' => $clinic->specialization_id,
+            'specialization'    => $clinic->specialization ? [
+                'id'      => $clinic->specialization->id,
+                'name'    => $clinic->specialization->name,
+                'name_en' => $clinic->specialization->name_en ?? null,
+            ] : null,
+            'is_active'         => (bool) $clinic->is_active,
+        ];
+    }
 }

@@ -296,7 +296,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'active'])->group(function (
 
     // Complaints
     Route::get('/showComplaints', [CenterController::class, 'complaintIndex']);
-    Route::post('/updateComplaintStatus/{complaint}', [CenterController::class, 'complaintUpdate']);
+    // Route::post('/updateComplaintStatus/{complaint}', [CenterController::class, 'complaintUpdate']);
 
     // Center info
     Route::post('/updateCenterInfo', [CenterController::class, 'updateCenterInfo']);

@@ -7,10 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 class Clinic extends Model
 {
     protected $fillable = [
-        'name',
-        'room_number',
-        'is_active',
-    ];
+    'name',
+    'room_number',
+    'floor',
+    'equipments',
+    'notes',
+    'specialization_id',
+    'is_active',
+];
 
     protected $casts = [
         'is_active' => 'boolean',
@@ -24,5 +28,10 @@ class Clinic extends Model
     public function materialRequests()
     {
         return $this->hasMany(MaterialRequest::class);
+    }
+
+    public function specialization()
+    {
+        return $this->belongsTo(Specialization::class);
     }
 }
