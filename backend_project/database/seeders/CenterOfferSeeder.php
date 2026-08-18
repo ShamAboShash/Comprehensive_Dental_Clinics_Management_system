@@ -7,6 +7,8 @@ use App\Models\TreatmentType;
 use App\Models\User;
 use App\Enums\UserRole;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class CenterOfferSeeder extends Seeder
@@ -27,10 +29,28 @@ class CenterOfferSeeder extends Seeder
             return;
         }
 
-        // Helper to find treatment type by Arabic name (or part of it)
+        // ── Default offer logo ──────────────────────────────────────
+        // Source: storage/app/public/offer.jpg
+        // Stored path in DB: offers/offer.jpg
+        $photoPath = 'offers/offer.jpg';
+        $source    = storage_path('app/public/offer.jpg');
+
+        if (File::exists($source)) {
+            Storage::disk('public')->makeDirectory('offers');
+
+            if (!Storage::disk('public')->exists($photoPath)) {
+                File::copy($source, storage_path('app/public/' . $photoPath));
+            }
+        } else {
+            $photoPath = null;
+            $this->command->warn('offer.jpg not found at storage/app/public/offer.jpg — offers will have no photo.');
+        }
+
+        // Helper to find treatment type by Arabic / English keyword
         $findType = function (string $keyword) use ($treatmentTypes) {
             return $treatmentTypes->first(function ($type) use ($keyword) {
-                return str_contains($type->name, $keyword) || str_contains($type->name_en ?? '', $keyword);
+                return str_contains($type->name, $keyword)
+                    || str_contains($type->name_en ?? '', $keyword);
             });
         };
 
@@ -106,11 +126,10 @@ class CenterOfferSeeder extends Seeder
                 'end_date'            => $data['end_date'],
                 'conditions'          => $data['conditions'],
                 'discount_percentage' => $data['discount_percentage'],
-                'photo_path'          => null,
+                'photo_path'          => $photoPath, // offers/offer.jpg
                 'is_active'           => $data['is_active'],
             ]);
 
-            // Attach matching treatment types
             $typeIds = [];
 
             foreach ($data['types'] as $keyword) {
@@ -120,13 +139,11 @@ class CenterOfferSeeder extends Seeder
                 }
             }
 
-            // Remove duplicates
             $typeIds = array_unique($typeIds);
 
             if (!empty($typeIds)) {
                 $offer->treatmentTypes()->attach($typeIds);
             }
         }
-
     }
 }

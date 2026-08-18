@@ -80,6 +80,7 @@ class PatientController extends Controller
             'treatments.dentist.employee.user',
             'allergies',
             'chronicDiseases',
+            'medications.medication'   // ← important
         ])->find($id);
 
         if (!$patient) {
@@ -147,6 +148,7 @@ class PatientController extends Controller
                 'teeth_cleaning_frequency'   => $patient->teeth_cleaning_frequency,
                 'allergies'                  => $patient->allergies,
                 'chronic_diseases'           => $patient->chronicDiseases,
+                'medications'                => $patient->medications,
                 'treatments'                 => $treatments,
                 'invoices'                   => $invoices,
                 'has_app_account'            => !empty($patient->user?->email) && !empty($patient->user?->password),
@@ -438,7 +440,7 @@ class PatientController extends Controller
      */
     public function patientInvoices(int $patientId): JsonResponse
     {
-                Gate::authorize('is-secretary');
+                Gate::authorize('is-admin-secretary');
 
         $patient = Patient::with('user')->find($patientId);
 

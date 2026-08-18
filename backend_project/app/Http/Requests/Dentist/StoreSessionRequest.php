@@ -14,7 +14,7 @@ class StoreSessionRequest extends FormRequest
             'appointment_id'    => 'required|exists:appointments,id|unique:treatment_sessions,appointment_id',
             'actual_start_time' => 'nullable|date',
             'actual_end_time'   => 'nullable|date|after:actual_start_time',
-            'status'            => 'sometimes|in:completed,missed',
+            'status'            => 'sometimes|in:completed,incompleted',
             'notes'             => 'nullable|string|max:2000',
 
             // Tooth treatments included at session creation

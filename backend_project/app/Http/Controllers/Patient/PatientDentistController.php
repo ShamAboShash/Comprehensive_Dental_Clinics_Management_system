@@ -70,7 +70,7 @@ class PatientDentistController extends Controller
     $dentists = Dentist::with(['employee.user', 'specialization', 'clinics'])
         ->whereIn('specialization_id', $specializationIds)
         ->whereHas('employee.user', function ($q) {
-            $q->where('is_active', false);
+            $q->where('is_active', true);
         })
         ->get();
 

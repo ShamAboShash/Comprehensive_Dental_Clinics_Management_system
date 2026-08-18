@@ -16,7 +16,7 @@ class StoreAppointmentRequest extends FormRequest
             'appointment_type_id' => 'nullable|exists:appointment_types,id',
             'treatment_id'        => 'nullable|exists:treatments,id',
             'type'                => 'required|in:emergency,new_treatment,continue_treatment,walk_in',
-            'status'              => 'sometimes|in:pending,pending_secretary,approved',
+            // 'status'              => 'sometimes|in:pending,pending_secretary,approved',
             'appointment_time'    => 'required|date',
             'notes'               => 'nullable|string|max:1000',
         ];

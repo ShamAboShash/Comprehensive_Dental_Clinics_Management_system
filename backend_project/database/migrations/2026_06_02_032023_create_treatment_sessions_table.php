@@ -31,7 +31,7 @@ return new class extends Migration
 
             $table->enum('status', [
                 'completed',
-                'missed',
+                'incompleted',
             ])->default('completed');
 
             $table->text('notes')->nullable();

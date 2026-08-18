@@ -17,7 +17,8 @@ class DentistProfileResource extends JsonResource
     {
         return [
             'id'                  => $this->id,
-
+            'user_id'             => $this->employee->user_id,
+            'employee_id'         => $this->employee_id,
             // User
             'name'                => $this->employee->user->name,
             'email'               => $this->employee->user->email,

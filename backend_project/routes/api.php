@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\DentistController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\OpirationsController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
+use App\Http\Controllers\Admin\InventoryController as AdminInventoryController;
 use App\Http\Controllers\Admin\SalaryPaymentController;
 
 use App\Http\Controllers\Auth\EmployeeAuthController;
@@ -190,11 +191,14 @@ Route::prefix('secretary')->middleware(['auth:sanctum', 'active'])->group(functi
     Route::get('/weeklyAppointments', [SecretaryAppointmentController::class, 'weekly']);
     Route::get('/monthlyAppointments', [SecretaryAppointmentController::class, 'monthly']);
     Route::get('/showAppointment/{id}', [SecretaryAppointmentController::class, 'show']);
-    Route::post('/addAppointment', [SecretaryAppointmentController::class, 'store']);
+    Route::post('/bookAppointment', [SecretaryAppointmentController::class, 'store']);
     Route::post('/updateAppointment/{id}', [SecretaryAppointmentController::class, 'update']);
     Route::post('/updateAppointmentStatus/{id}', [SecretaryAppointmentController::class, 'updateStatus']);
     Route::get('/dentistAppointments/{dentistId}', [SecretaryAppointmentController::class, 'dentistAppointments']);
     Route::get('/lateAppointments', [SecretaryAppointmentController::class, 'late']);
+    Route::get('dentistsByAppointmentType/{appointmentTypeId}', [SecretaryAppointmentController::class, 'byAppointmentType']);
+    Route::get('showDentistSchedule/{dentist}/', [SecretaryAppointmentController::class, 'availableSlots']);
+
 
     // Warehouse materials
     Route::get('/showAllWarehouseMaterials', [SecretaryWarehouseMaterialController::class, 'index']);
@@ -308,10 +312,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'active'])->group(function (
     Route::post('/updateCenterInfo', [CenterController::class, 'updateCenterInfo']);
     Route::post('/updateWorkHours', [CenterController::class, 'updateWorkHours']);
 
-    // reports 
+    // reports
     Route::get('/reports', [AdminReportController::class, 'show']);
-    Route::get('/inventory', [AdminReportController::class, 'show']);
-
+    Route::get('/inventory', [AdminInventoryController::class, 'show']);
     //salary payment
     Route::post('/paySalary',     [SalaryPaymentController::class, 'pay']);
     Route::post('/payAllSalary', [SalaryPaymentController::class, 'payAll']);

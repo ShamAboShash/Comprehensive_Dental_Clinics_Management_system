@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Secretary\StoreAppointmentRequest;
 use App\Http\Requests\Secretary\UpdateAppointmentRequest;
 use App\Http\Requests\Secretary\UpdateAppointmentStatusRequest;
+use App\Http\Resources\patient\DentistResource;
+use App\Models\AppointmentType;
 use App\Models\Appointment;
 use App\Models\Dentist;
 use App\Models\DentistWorkSchedule;
+use App\Models\Treatment;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,6 +25,18 @@ class AppointmentController extends Controller
         Gate::authorize('is-secretary');
     }
 
+
+     private const SLOT_MINUTES = 30;
+     private const DAYS_AHEAD   = 14;
+     private const CARBON_DOW_TO_ENUM = [
+        0 => 'sunday',
+        1 => 'monday',
+        2 => 'tuesday',
+        3 => 'wednesday',
+        4 => 'thursday',
+        5 => 'friday',
+        6 => 'saturday',
+     ];
     /**
      * عرض كل المواعيد (مع فلاتر اختيارية)
      * GET /secretary/showAllAppointments?status=&dentist_id=&patient_id=&from=&to=
@@ -206,70 +221,131 @@ class AppointmentController extends Controller
     }
 
     /**
-     * 6. إضافة موعد
-     * POST /secretary/addAppointment
-     * Secretary books → status defaults to approved
-     */
-    public function store(StoreAppointmentRequest $request): JsonResponse
-    {
-        $appointmentTime = Carbon::parse($request->appointment_time);
+ * حجز موعد (مريض مسجّل أو walk-in)
+ * نفس فحوصات المريض: جدول الدوام + اختصاص الطبيب + تعارض الشريحة
+ * POST /secretary/addAppointment
+ */
+public function store(StoreAppointmentRequest $request): JsonResponse
+{
+    $patientId = $request->patient_id;
 
-        // Optional: must fall inside dentist work schedule
-        if (!$this->isWithinDentistSchedule($request->dentist_id, $request->appointment_time)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'الوقت المحدد لا يقع ضمن ساعات دوام الطبيب.',
-            ], 422);
-        }
+    // 1) اختصاص الطبيب ↔ نوع الموعد
+    $isQualified = DB::table('appointment_type_specializations')
+        ->join('dentists', 'dentists.specialization_id', '=', 'appointment_type_specializations.specialization_id')
+        ->where('appointment_type_specializations.appointment_type_id', $request->appointment_type_id)
+        ->where('dentists.id', $request->dentist_id)
+        ->exists();
 
-        $slotLock = $request->dentist_id . '_' . $appointmentTime->format('Y-m-d H:i:s');
-
-        try {
-            $appointment = DB::transaction(function () use ($request, $appointmentTime, $slotLock) {
-                $conflict = Appointment::where('slot_lock', $slotLock)
-                    ->whereNotIn('status', ['cancelled', 'rejected', 'patient_no_show'])
-                    ->lockForUpdate()
-                    ->exists();
-
-                if ($conflict) {
-                    return null;
-                }
-
-                return Appointment::create([
-                    'patient_id'          => $request->patient_id,
-                    'dentist_id'          => $request->dentist_id,
-                    'appointment_type_id' => $request->appointment_type_id,
-                    'treatment_id'        => $request->treatment_id,
-                    'type'                => $request->type,
-                    'status'              => $request->status ?? 'approved',
-                    'appointment_time'    => $appointmentTime,
-                    'slot_lock'           => $slotLock,
-                    'notes'               => $request->notes,
-                ]);
-            });
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'حدث خطأ أثناء إنشاء الموعد.',
-            ], 500);
-        }
-
-        if (!$appointment) {
-            return response()->json([
-                'success' => false,
-                'message' => 'هذا الوقت محجوز مسبقاً عند نفس الطبيب. اختر وقتاً آخر.',
-            ], 409);
-        }
-
-        $appointment->load(['patient.user', 'dentist.employee.user', 'appointmentType', 'treatment.treatmentType']);
-
+    if (!$isQualified) {
         return response()->json([
-            'success' => true,
-            'message' => 'تم إنشاء الموعد بنجاح.',
-            'data'    => $this->format($appointment),
-        ], 201);
+            'success' => false,
+            'message' => 'هذا الطبيب لا يعالج هذا النوع من المواعيد.',
+        ], 422);
     }
 
+    // 2) ضمن دوام الطبيب + شريحة 30 دقيقة
+    if (!$this->isWithinDentistSchedule($request->dentist_id, $request->appointment_time)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'الوقت المحدد لا يقع ضمن ساعات دوام الطبيب.',
+        ], 422);
+    }
+
+    // 3) متابعة علاج: العلاج يخص نفس المريض ونفس الطبيب
+    if ($request->type === 'continue_treatment') {
+        $ok = Treatment::where('id', $request->treatment_id)
+            ->where('patient_id', $patientId)
+            ->where('dentist_id', $request->dentist_id)
+            ->exists();
+
+        if (!$ok) {
+            return response()->json([
+                'success' => false,
+                'message' => 'العلاج المحدد لا يخص هذا المريض أو هذا الطبيب.',
+            ], 422);
+        }
+    }
+
+    // 4) حجز الشريحة (slot_lock)
+    try {
+        $appointment = DB::transaction(function () use ($request, $patientId) {
+            $slotLock = $request->dentist_id . '_' . $request->appointment_time;
+
+            $conflict = Appointment::where('slot_lock', $slotLock)
+                ->whereNotIn('status', ['cancelled', 'rejected', 'patient_no_show'])
+                ->lockForUpdate()
+                ->exists();
+
+            if ($conflict) {
+                throw new \RuntimeException('SLOT_TAKEN');
+            }
+
+            return Appointment::create([
+                'patient_id'          => $patientId,
+                'dentist_id'          => $request->dentist_id,
+                'appointment_type_id' => $request->appointment_type_id,
+                'treatment_id'        => $request->treatment_id,
+                'type'                => $request->type,
+                'status'              => 'pending_secretary',
+                'appointment_time'    => $request->appointment_time,
+                'slot_lock'           => $slotLock,
+                'notes'               => $request->notes,
+            ]);
+        });
+    } catch (\RuntimeException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'تم حجز هذا الموعد للتو، يرجى اختيار وقت آخر.',
+        ], 409);
+    } catch (\Illuminate\Database\QueryException $e) {
+        if ($e->getCode() === '23000') {
+            return response()->json([
+                'success' => false,
+                'message' => 'تم حجز هذا الموعد للتو، يرجى اختيار وقت آخر.',
+            ], 409);
+        }
+        throw $e;
+    }
+
+    $appointment->load([
+        'patient.user',
+        'dentist.employee.user',
+        'appointmentType',
+        'treatment.treatmentType',
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'تم حجز الموعد بنجاح.',
+        'data'    => $this->format($appointment),
+    ], 201);
+}
+
+private function isWithinDentistSchedule(int $dentistId, string $appointmentTime): bool
+{
+    $dt = Carbon::parse($appointmentTime);
+
+    if ($dt->minute % 30 !== 0 || $dt->second !== 0) {
+        return false;
+    }
+
+    $dayEnum = strtolower($dt->format('l'));
+
+    $schedules = DentistWorkSchedule::where('dentist_id', $dentistId)
+        ->where('day_of_week', $dayEnum)
+        ->get();
+
+    foreach ($schedules as $schedule) {
+        $shiftStart = Carbon::parse($dt->toDateString() . ' ' . $schedule->start_time);
+        $shiftEnd   = Carbon::parse($dt->toDateString() . ' ' . $schedule->end_time);
+
+        if ($dt->gte($shiftStart) && $dt->copy()->addMinutes(30)->lte($shiftEnd)) {
+            return true;
+        }
+    }
+
+    return false;
+}
     /**
      * 7. تعديل موعد
      * POST /secretary/updateAppointment/{id}
@@ -497,34 +573,122 @@ class AppointmentController extends Controller
         ]);
     }
 
-    // ───────────────────────── Helpers ─────────────────────────
 
-    private function isWithinDentistSchedule(int $dentistId, string $appointmentTime): bool
+      
+    public function availableSlots(Dentist $dentist): JsonResponse
     {
-        $dt = Carbon::parse($appointmentTime);
+        $today = Carbon::today();
+        $rangeEnd = $today->copy()->addDays(self::DAYS_AHEAD - 1);
 
-        // Align to 30-min slots (same rule as patient module)
-        if ($dt->minute % 30 !== 0 || $dt->second !== 0) {
-            return false;
+        // كل جداول عمل الطبيب مجمعة حسب اليوم
+        $schedulesByDay = DentistWorkSchedule::where('dentist_id', $dentist->id)
+            ->get()
+            ->groupBy('day_of_week');
+
+        if ($schedulesByDay->isEmpty()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'لا يوجد دوام مسجل لهذا الطبيب.',
+                'data'    => [],
+            ]);
         }
 
-        $dayEnum = strtolower($dt->format('l')); // monday, tuesday, ...
+        // كل المواعيد المحجوزة (غير الملغاة/المرفوضة) خلال الفترة كاملة، بجلب واحد فقط
+        $bookedAppointments = Appointment::where('dentist_id', $dentist->id)
+            ->whereBetween('appointment_time', [$today->copy()->startOfDay(), $rangeEnd->copy()->endOfDay()])
+            ->whereNotIn('status', ['cancelled', 'rejected'])
+            ->pluck('appointment_time')
+            ->map(fn ($time) => Carbon::parse($time)->format('Y-m-d H:i'))
+            ->toArray();
 
-        $schedules = DentistWorkSchedule::where('dentist_id', $dentistId)
-            ->where('day_of_week', $dayEnum)
-            ->get();
+        $now = Carbon::now();
+        $result = [];
 
-        foreach ($schedules as $schedule) {
-            $shiftStart = Carbon::parse($dt->toDateString() . ' ' . $schedule->start_time);
-            $shiftEnd   = Carbon::parse($dt->toDateString() . ' ' . $schedule->end_time);
+        for ($i = 0; $i < self::DAYS_AHEAD; $i++) {
+            $date = $today->copy()->addDays($i);
+            $dayEnum = self::CARBON_DOW_TO_ENUM[$date->dayOfWeek];
 
-            if ($dt->gte($shiftStart) && $dt->copy()->addMinutes(30)->lte($shiftEnd)) {
-                return true;
+            $daySchedules = $schedulesByDay->get($dayEnum);
+            if (!$daySchedules) {
+                continue; // الطبيب لا يعمل في هذا اليوم من الأسبوع
+            }
+
+            $daySlots = [];
+
+            foreach ($daySchedules as $schedule) {
+                $slotStart = Carbon::parse($date->toDateString() . ' ' . $schedule->start_time);
+                $rangeEndTime = Carbon::parse($date->toDateString() . ' ' . $schedule->end_time);
+
+                while ($slotStart->copy()->addMinutes(self::SLOT_MINUTES)->lte($rangeEndTime)) {
+                    $slotKey = $slotStart->format('Y-m-d H:i');
+
+                    $isPast   = $slotStart->lte($now);
+                    $isBooked = in_array($slotKey, $bookedAppointments, true);
+
+                    if (!$isPast && !$isBooked) {
+                        $daySlots[] = [
+                            'time'     => $slotStart->format('H:i'),
+                            'datetime' => $slotStart->toDateTimeString(),
+                        ];
+                    }
+
+                    $slotStart->addMinutes(self::SLOT_MINUTES);
+                }
+            }
+
+            if (!empty($daySlots)) {
+                $result[] = [
+                    'date'  => $date->toDateString(),
+                    'day'   => $dayEnum,
+                    'slots' => $daySlots,
+                ];
             }
         }
 
-        return false;
+        return response()->json([
+            'success' => true,
+            'dentist_id' => $dentist->id,
+            'data'       => $result,
+        ]);
     }
+
+
+    public function byAppointmentType(int $appointmentTypeId)
+{
+    // Check appointment type exists
+    $appointmentType =AppointmentType::with('specializations')->find($appointmentTypeId);
+
+    if (!$appointmentType) {
+        return response()->json([
+            'success' => false,
+            'message' => 'نوع الموعد غير موجود',
+        ], 404);
+    }
+
+    $specializationIds = $appointmentType->specializations->pluck('id');
+
+    if ($specializationIds->isEmpty()) {
+        return response()->json([
+            'success' => true,
+            'data'    => [],
+            'message' => 'لا يوجد أطباء مرتبطين بهذا النوع من المواعيد',
+        ]);
+    }
+
+    $dentists = Dentist::with(['employee.user', 'specialization', 'clinics'])
+        ->whereIn('specialization_id', $specializationIds)
+        ->whereHas('employee.user', function ($q) {
+            $q->where('is_active', true);
+        })
+        ->get();
+
+    return response()->json([
+        'success' => true,
+        'data'    => DentistResource::collection($dentists),
+    ]);
+}
+
+    // ───────────────────────── Helpers ─────────────────────────
 
     private function format(Appointment $a): array
     {
