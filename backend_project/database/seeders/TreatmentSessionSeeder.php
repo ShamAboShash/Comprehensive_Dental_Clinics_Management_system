@@ -187,7 +187,7 @@ class TreatmentSessionSeeder extends Seeder
                 $startTime = $appointmentTime->copy();
                 $endTime   = $appointmentTime->copy()->addMinutes(30 + (($i * 15) % 45));
 
-                $sessionStatus = $apptStatus === 'completed' ? 'completed' : 'missed';
+                $sessionStatus = $apptStatus === 'completed' ? 'completed' : 'incompleted';
 
                 $session = TreatmentSession::create([
                     'treatment_id'      => $treatment->id,
