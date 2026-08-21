@@ -22,6 +22,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Hash;
+use App\Models\EmployeeQrCode;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\JsonResponse;
 
 class EmployeeController extends Controller
 {
@@ -391,4 +395,63 @@ class EmployeeController extends Controller
             'data'    => $schedule,
         ]);
     }
+
+    public function generateQrCode(int $employeeId)
+{
+    $employee = Employee::with('user')->find($employeeId);
+
+    if (!$employee || !$employee->user) {
+        return response()->json([
+            'success' => false,
+            'message' => 'الموظف غير موجود',
+        ], 404);
+    }
+
+    $userId = $employee->user_id;
+
+    // Create the content in the format you already printed
+    $qrContent = 'dt-emp-' . str_pad($userId, 3, '0', STR_PAD_LEFT);
+
+    // Save or update in the table
+    $qr = EmployeeQrCode::updateOrCreate(
+        ['user_id' => $userId],
+        [
+            'employee_id' => $employee->id,
+            'qr_content'  => $qrContent,
+            'is_active'   => true,
+        ]
+    );
+
+    // Optional: Generate and save the image file
+    $folder = 'qrcodes';
+    if (!Storage::disk('public')->exists($folder)) {
+        Storage::disk('public')->makeDirectory($folder);
+    }
+
+    $fileName = 'qr-emp-' . $employeeId . '.svg';
+    $filePath = $folder . '/' . $fileName;
+
+    $svg = QrCode::format('svg')
+        ->size(300)
+        ->margin(2)
+        ->errorCorrection('H')
+        ->generate($qrContent);
+
+    Storage::disk('public')->put($filePath, $svg);
+
+    $url = asset('storage/' . $filePath);
+
+    return response()->json([
+        'success'     => true,
+        'message'     => 'تم إنشاء رمز QR بنجاح',
+        'data'        => [
+            'employee_id'   => $employee->id,
+            'employee_name' => $employee->user->name,
+            'user_id'       => $userId,
+            'qr_content'    => $qrContent,
+            'qr_url'        => $url,
+            'is_active'     => $qr->is_active,
+        ]
+    ], 201);
+}
 }

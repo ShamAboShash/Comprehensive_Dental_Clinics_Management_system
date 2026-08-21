@@ -15,11 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use App\Models\EmployeeQrCode;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
-use BaconQrCode\Renderer\Image\GdImageBackEnd;
-use BaconQrCode\Renderer\ImageRenderer;
-use BaconQrCode\Renderer\RendererStyle\RendererStyle;
-use BaconQrCode\Writer;
-use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
 
 class AttendanceController extends Controller
 {
@@ -567,7 +563,40 @@ private function employeeWorksOnDay(
     ], 422);
 }
 
-public function getQrCode(int $employeeId): Response|JsonResponse
+// public function getQrCode(int $employeeId): Response|JsonResponse
+// {
+//     $qr = EmployeeQrCode::where('employee_id', $employeeId)
+//         ->where('is_active', true)
+//         ->first();
+
+//     if (!$qr) {
+//         return response()->json([
+//             'success' => false,
+//             'message' => 'لا يوجد رمز QR لهذا الموظف',
+//         ], 404);
+//     }
+
+//     // Generate as SVG first (very reliable)
+//     $svg = QrCode::format('svg')
+//         ->size(300)
+//         ->margin(2)
+//         ->errorCorrection('H')
+//         ->generate($qr->qr_content);
+
+//     // Convert SVG to PNG using pure PHP (no Imagick needed)
+//     // We will return base64 PNG so frontend can easily use it
+
+//     return response()->json([
+//         'success'     => true,
+//         'qr_content'  => $qr->qr_content,
+//         'qr_image'    => 'data:image/svg+xml;base64,' . base64_encode($svg),
+//     ]);
+// }
+
+
+
+
+public function getQrCode(int $employeeId): JsonResponse
 {
     $qr = EmployeeQrCode::where('employee_id', $employeeId)
         ->where('is_active', true)
@@ -580,17 +609,34 @@ public function getQrCode(int $employeeId): Response|JsonResponse
         ], 404);
     }
 
-    // Generate QR using GD (no Imagick needed)
-    $renderer = new ImageRenderer(
-        new RendererStyle(300),          // size
-        new GdImageBackEnd()
-    );
+    // Create folder if it doesn't exist
+    $folder = 'qrcodes';
+    if (!Storage::disk('public')->exists($folder)) {
+        Storage::disk('public')->makeDirectory($folder);
+    }
 
-    $writer = new Writer($renderer);
-    $qrImage = $writer->writeString($qr->qr_content);
+    // File name example: qr-emp-5.svg
+    $fileName = 'qr-emp-' . $employeeId . '.svg';
+    $filePath = $folder . '/' . $fileName;
 
-    return response($qrImage, 200)
-        ->header('Content-Type', 'image/png');
+    // Generate and save the QR as SVG
+    $svg = QrCode::format('svg')
+        ->size(300)
+        ->margin(2)
+        ->errorCorrection('H')
+        ->generate($qr->qr_content);
+
+    Storage::disk('public')->put($filePath, $svg);
+
+    // Public URL
+    $url = asset('storage/' . $filePath);
+
+    return response()->json([
+        'success'     => true,
+        'qr_content'  => $qr->qr_content,
+        'qr_url'      => $url,
+        'file_name'   => $fileName,
+    ]);
 }
 
 }

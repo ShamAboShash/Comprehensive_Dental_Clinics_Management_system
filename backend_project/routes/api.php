@@ -323,6 +323,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'active'])->group(function (
     Route::post('/payAllSalary', [SalaryPaymentController::class, 'payAll']);
 
     Route::get('/employeeQrCode/{employeeId}/', [SecretaryAttendanceController::class, 'getQrCode']);
+    Route::post('/generateQrCode/{employeeId}/', [EmployeeController::class, 'generateQrCode']);
 
 
 });
