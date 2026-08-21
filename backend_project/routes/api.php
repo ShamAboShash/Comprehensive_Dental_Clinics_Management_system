@@ -246,6 +246,9 @@ Route::prefix('secretary')->middleware(['auth:sanctum', 'active'])->group(functi
     // Complaints
     Route::post('/addComplaint', [SecretaryComplaintController::class, 'store']);
     Route::post('/updateComplaintStatus/{id}', [SecretaryComplaintController::class, 'updateStatus']);
+
+    //QRcode
+    Route::post('/attendance/scan', [SecretaryAttendanceController::class, 'scan']);
 });
 
 // 40
@@ -318,6 +321,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'active'])->group(function (
     //salary payment
     Route::post('/paySalary',     [SalaryPaymentController::class, 'pay']);
     Route::post('/payAllSalary', [SalaryPaymentController::class, 'payAll']);
+
+    Route::get('/employeeQrCode/{employeeId}/', [SecretaryAttendanceController::class, 'getQrCode']);
 
 
 });

@@ -57,7 +57,8 @@ class DatabaseSeeder extends Seeder
     InvoiceSeeder::class,
     PaymentSeeder::class,
     CenterOfferSeeder::class,
-
+    PurchaseInvoiceSeeder::class,
+    EmployeeQrCodeSeeder::class,
     AttendanceSeeder::class,             // ← moved to end
 ]);
 

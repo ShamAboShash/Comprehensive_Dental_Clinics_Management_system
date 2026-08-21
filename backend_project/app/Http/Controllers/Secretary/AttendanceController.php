@@ -13,6 +13,13 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use App\Models\EmployeeQrCode;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use BaconQrCode\Renderer\Image\GdImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
+use Illuminate\Http\Response;
 
 class AttendanceController extends Controller
 {
@@ -460,4 +467,130 @@ private function employeeWorksOnDay(
             'registered_by' => $a->registeredBy?->name,
         ];
     }
+
+
+    public function scan(Request $request): JsonResponse
+{
+    $request->validate([
+        'qr_content' => 'required|string|max:30',
+    ], [
+        'qr_content.required' => 'يجب إرسال رمز QR',
+    ]);
+
+    $qrContent = trim($request->qr_content);
+
+    // Find the QR record
+    $qr = EmployeeQrCode::where('qr_content', $qrContent)
+        ->where('is_active', true)
+        ->first();
+
+    if (!$qr) {
+        return response()->json([
+            'success' => false,
+            'message' => 'رمز QR غير صالح أو غير مفعل',
+        ], 404);
+    }
+
+    $employeeId = $qr->employee_id;
+    $today = now()->toDateString();
+
+    // Check if attendance already exists today
+    $attendance = Attendance::where('employee_id', $employeeId)
+        ->whereDate('date', $today)
+        ->first();
+
+    // First scan → Check-in
+    if (!$attendance) {
+        $attendance = Attendance::create([
+            'employee_id'   => $employeeId,
+            'registered_by' => auth()->id(),
+            'date'          => $today,
+            'status'        => 'present',
+            'check_in'      => now()->format('H:i'),
+            'check_out'     => null,
+            'notes'         => 'تم التسجيل عبر QR',
+        ]);
+
+        $attendance->load('employee.user');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم تسجيل الحضور بنجاح',
+            'action'  => 'check_in',
+            'data'    => [
+                'id'            => $attendance->id,
+                'employee_id'   => $attendance->employee_id,
+                'employee_name' => $attendance->employee?->user?->name,
+                'date'          => $attendance->date?->toDateString(),
+                'status'        => $attendance->status,
+                'check_in'      => $attendance->check_in,
+                'check_out'     => $attendance->check_out,
+            ],
+        ], 201);
+    }
+
+    // Second scan → Check-out
+    if ($attendance->status === 'present' && empty($attendance->check_out)) {
+        $attendance->update([
+            'check_out'     => now()->format('H:i'),
+            'registered_by' => auth()->id(),
+            'notes'         => ($attendance->notes ? $attendance->notes . ' | ' : '') . 'تم تسجيل الانصراف عبر QR',
+        ]);
+
+        $attendance->load('employee.user');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم تسجيل الانصراف بنجاح',
+            'action'  => 'check_out',
+            'data'    => [
+                'id'            => $attendance->id,
+                'employee_id'   => $attendance->employee_id,
+                'employee_name' => $attendance->employee?->user?->name,
+                'date'          => $attendance->date?->toDateString(),
+                'status'        => $attendance->status,
+                'check_in'      => $attendance->check_in,
+                'check_out'     => $attendance->check_out,
+            ],
+        ]);
+    }
+
+    // Already checked in and out
+    return response()->json([
+        'success' => false,
+        'message' => 'تم تسجيل الحضور والانصراف مسبقاً لهذا اليوم',
+        'data'    => [
+            'employee_name' => $attendance->employee?->user?->name,
+            'check_in'      => $attendance->check_in,
+            'check_out'     => $attendance->check_out,
+        ],
+    ], 422);
+}
+
+public function getQrCode(int $employeeId): Response|JsonResponse
+{
+    $qr = EmployeeQrCode::where('employee_id', $employeeId)
+        ->where('is_active', true)
+        ->first();
+
+    if (!$qr) {
+        return response()->json([
+            'success' => false,
+            'message' => 'لا يوجد رمز QR لهذا الموظف',
+        ], 404);
+    }
+
+    // Generate QR using GD (no Imagick needed)
+    $renderer = new ImageRenderer(
+        new RendererStyle(300),          // size
+        new GdImageBackEnd()
+    );
+
+    $writer = new Writer($renderer);
+    $qrImage = $writer->writeString($qr->qr_content);
+
+    return response($qrImage, 200)
+        ->header('Content-Type', 'image/png');
+}
+
 }
