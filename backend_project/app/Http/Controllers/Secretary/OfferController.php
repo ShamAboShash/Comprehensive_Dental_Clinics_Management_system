@@ -191,8 +191,7 @@ public function show(int $id): JsonResponse
                 $data['is_active'] = $request->boolean('is_active');
             }
 
-            if ($request->hasFile('photo')) {
-                // Delete old photo
+            if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
                 if ($offer->photo_path && Storage::disk('public')->exists($offer->photo_path)) {
                     Storage::disk('public')->delete($offer->photo_path);
                 }

@@ -116,6 +116,7 @@ class PatientController extends Controller
             'id'                   => $t->id,
             'treatment_type'       => $t->treatmentType?->name,
             'dentist'              => $t->dentist?->employee?->user?->name,
+            'dentist_id'           => $t->dentist_id,
             'status'               => $t->status,
             'total_sessions_needed'=> $t->total_sessions_needed,
             'sessions_completed'   => $t->sessions_completed,

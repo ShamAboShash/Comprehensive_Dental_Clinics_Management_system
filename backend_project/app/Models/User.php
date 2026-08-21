@@ -135,4 +135,9 @@ class User extends Authenticatable
     {
         return $this->hasOneThrough(Dentist::class, Employee::class);
     }
+
+    public function devices()
+    {
+        return $this->hasMany(UserDevice::class);
+    }
 }

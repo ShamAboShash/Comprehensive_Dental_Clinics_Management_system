@@ -11,11 +11,12 @@ use App\Models\LabOrderMaterial;
 use App\Models\LabStock;
 use App\Models\LabStockLog;
 use App\Models\Employee;
-use App\Models\User;
 use App\Services\NotificationService;
+use App\Models\User;
 use App\Enums\UserRole;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class LabOrderController extends Controller
@@ -133,9 +134,10 @@ class LabOrderController extends Controller
     }
 
     // PATCH /lab/orders/{id}/set-completed
+// PATCH /lab/orders/{id}/set-completed
 public function setCompleted(SetOrderCompletedRequest $request, $id)
 {
-    $order = LabOrder::find($id);
+    $order = LabOrder::with(['dentist.user', 'items'])->find($id);
 
     if (!$order) {
         return response()->json([
@@ -154,6 +156,8 @@ public function setCompleted(SetOrderCompletedRequest $request, $id)
     DB::beginTransaction();
 
     try {
+        $lowStockMaterials = [];   // collect materials that became low
+
         if ($request->filled('materials')) {
             foreach ($request->materials as $item) {
                 $stock = LabStock::with('material')
@@ -184,12 +188,53 @@ public function setCompleted(SetOrderCompletedRequest $request, $id)
                     'material_id'   => $item['material_id'],
                     'quantity_used' => $item['quantity_used'],
                 ]);
+
+                // Check low stock after decrement
+                $stock->refresh();
+                if ($stock->quantity <= LabStockController::LOW_STOCK_THRESHOLD) {
+                    $lowStockMaterials[] = $stock;
+                }
             }
         }
 
+        // Update order status
         $order->update(['status' => 'completed']);
 
         DB::commit();
+
+        // ====================== NOTIFICATIONS (after successful commit) ======================
+
+        // 1. Notify the dentist that the lab order is completed
+        if ($order->dentist?->user) {
+            NotificationService::send(
+                user: $order->dentist->user,
+                title: 'طلب المختبر مكتمل',
+                body: "تم إنجاز طلب المختبر #{$order->id} بنجاح",
+                type: 'lab_order_ready',          // or 'lab_order_completed'
+                referenceable: $order
+            );
+        }
+
+        // 2. Notify all active Lab Managers about low stock materials
+        if (!empty($lowStockMaterials)) {
+            $labManagers = User::where('role', UserRole::LAB_MANAGER)
+                ->where('is_active', true)
+                ->get();
+
+            foreach ($lowStockMaterials as $stock) {
+                foreach ($labManagers as $manager) {
+                    NotificationService::send(
+                        user: $manager,
+                        title: 'تنبيه: مخزون منخفض',
+                        body: "المادة ({$stock->material->name}) وصلت لحد التنبيه في مخزن المختبر (الكمية الحالية: {$stock->quantity})",
+                        type: 'low_stock_alert',
+                        referenceable: $stock
+                    );
+                }
+            }
+        }
+
+        // ====================== END NOTIFICATIONS ======================
 
         return response()->json([
             'success' => true,
@@ -197,12 +242,19 @@ public function setCompleted(SetOrderCompletedRequest $request, $id)
             'data'    => new LabOrderResource($order->fresh([
                 'items.labOrderType',
                 'technician.user',
-                'modifications'
+                'modifications',
+                'dentist.user',
             ])),
         ]);
 
     } catch (\Exception $e) {
         DB::rollBack();
+
+        Log::error('Lab order complete failed', [
+            'order_id' => $id,
+            'error'    => $e->getMessage(),
+        ]);
+
         return response()->json([
             'success' => false,
             'message' => 'حدث خطأ أثناء إكمال الطلب',
@@ -210,34 +262,6 @@ public function setCompleted(SetOrderCompletedRequest $request, $id)
     }
 }
 
-                        // Auto notify lab manager if stock dropped below threshold
-                    // $stock->refresh();
-                    // if ($stock->quantity <= LabStockController::LOW_STOCK_THRESHOLD) {
-                    //     $labManagers = User::where('role', UserRole::LAB_MANAGER)
-                    //         ->where('is_active', true)
-                    //         ->get();
-
-                        // foreach ($labManagers as $manager) {
-                        //     NotificationService::send(
-                        //         user: $manager,
-                        //         title: 'تنبيه: مخزون منخفض',
-                        //         body: "المادة ({$stock->material->name}) وصلت لحد التنبيه في مخزن المختبر",
-                        //         type: 'low_stock_alert',
-                        //         referenceable: null,
-                        //     );
-                        // }
-                    // }
-
-                // Notify dentist
-                // if ($order->dentist?->user) {
-                //     NotificationService::send(
-                //         user: $order->dentist->user,
-                //         title: 'طلب المختبر مكتمل',
-                //         body: "تم إنجاز طلب المختبر #{$order->id} بنجاح",
-                //         type: 'lab_order_completed',
-                //         referenceable: $order,
-                //     );
-                // }
     // PATCH /lab/orders/{id}/set-cancelled
     public function setCancelled($id)
     {
@@ -259,16 +283,6 @@ public function setCompleted(SetOrderCompletedRequest $request, $id)
 
         $order->update(['status' => 'cancelled']);
 
-        // Notify technician if already assigned
-        if ($order->technician?->user) {
-            NotificationService::send(
-                user: $order->technician->user,
-                title: 'تم إلغاء طلب مختبر',
-                body: "تم إلغاء طلب المختبر #{$order->id}",
-                type: 'lab_order_cancelled',
-                referenceable: $order,
-            );
-        }
 
         return response()->json([
             'success' => true,
