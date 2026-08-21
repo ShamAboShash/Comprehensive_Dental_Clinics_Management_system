@@ -11,6 +11,9 @@ use App\Models\WarehouseStockLog;
 use App\Models\Material;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
+use App\Services\NotificationService;
+use App\Models\User;
+use App\Enums\UserRole;
 
 class WarehouseStockController extends Controller
 {
@@ -208,67 +211,86 @@ class WarehouseStockController extends Controller
 
     // POST /warehouseManager/stock/{id}/adjust
     public function adjust(AdjustWarehouseStockRequest $request, $id)
-    {
-        $stock = WarehouseStock::with('material')->find($id);
+{
+    $stock = WarehouseStock::with('material')->find($id);
 
-        if (!$stock) {
-            return response()->json([
-                'success' => false,
-                'message' => 'دفعة المخزون غير موجودة',
-            ], 404);
-        }
-
-        $type     = $request->type;      // in | out
-        $quantity = $request->quantity;
-
-        // Prevent negative stock
-        if ($type === 'out' && $stock->quantity < $quantity) {
-            return response()->json([
-                'success' => false,
-                'message' => "الكمية غير كافية. المتوفر حالياً: {$stock->quantity}",
-            ], 422);
-        }
-
-        DB::beginTransaction();
-
-        try {
-            if ($type === 'in') {
-                $stock->increment('quantity', $quantity);
-            } else {
-                $stock->decrement('quantity', $quantity);
-            }
-
-            WarehouseStockLog::create([
-                'material_id'        => $stock->material_id,
-                'warehouse_stock_id' => $stock->id,
-                'type'               => $type,
-                'quantity'           => $quantity,
-                'reason'             => $request->reason,
-                'notes'              => $request->notes,
-                'done_by'            => $request->user()->id,
-            ]);
-
-            DB::commit();
-
-            $stock->refresh()->load('material');
-
-            return response()->json([
-                'success' => true,
-                'message' => $type === 'in'
-                    ? 'تم زيادة الكمية بنجاح'
-                    : 'تم إنقاص الكمية بنجاح',
-                'data'    => $this->formatStock($stock),
-            ]);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            return response()->json([
-                'success' => false,
-                'message' => 'حدث خطأ أثناء تعديل الكمية',
-            ], 500);
-        }
+    if (!$stock) {
+        return response()->json([
+            'success' => false,
+            'message' => 'دفعة المخزون غير موجودة',
+        ], 404);
     }
+
+    $type     = $request->type;      // in | out
+    $quantity = $request->quantity;
+
+    // Prevent negative stock
+    if ($type === 'out' && $stock->quantity < $quantity) {
+        return response()->json([
+            'success' => false,
+            'message' => "الكمية غير كافية. المتوفر حالياً: {$stock->quantity}",
+        ], 422);
+    }
+
+    DB::beginTransaction();
+
+    try {
+        if ($type === 'in') {
+            $stock->increment('quantity', $quantity);
+        } else {
+            $stock->decrement('quantity', $quantity);
+        }
+
+        WarehouseStockLog::create([
+            'material_id'        => $stock->material_id,
+            'warehouse_stock_id' => $stock->id,
+            'type'               => $type,
+            'quantity'           => $quantity,
+            'reason'             => $request->reason,
+            'notes'              => $request->notes,
+            'done_by'            => $request->user()->id,
+        ]);
+
+        DB::commit();
+
+        $stock->refresh()->load('material');
+
+        // ── Notify Admin if stock became low after an "out" ──
+        if ($type === 'out' && $stock->quantity <= 10) {   // LOW_STOCK_THRESHOLD
+            $materialName = $stock->material?->name ?? 'مادة';
+
+            $admins = User::where('role', UserRole::ADMIN)
+                ->where('is_active', true)
+                ->get();
+
+            foreach ($admins as $admin) {
+                NotificationService::send(
+                    user: $admin,
+                    title: 'تنبيه: نقص في مواد المستودع',
+                    body: "المادة ({$materialName}) وصلت لحد التنبيه في المستودع (الكمية الحالية: {$stock->quantity})",
+                    type: 'warehouse_low_stock',
+                    referenceable: $stock
+                );
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $type === 'in'
+                ? 'تم زيادة الكمية بنجاح'
+                : 'تم إنقاص الكمية بنجاح',
+            'data'    => $this->formatStock($stock),
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        return response()->json([
+            'success' => false,
+            'message' => 'حدث خطأ أثناء تعديل الكمية',
+        ], 500);
+    }
+}
 
     // GET /warehouseManager/stock/logs
     // Optional filters: ?material_id=1  or  ?warehouse_stock_id=5

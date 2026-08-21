@@ -14,24 +14,7 @@ return new class extends Migration
             $table->foreignId('user_id')
                 ->constrained('users')
                 ->onDelete('cascade');
-
-            $table->enum('type', [
-                'appointment_approved',
-                'appointment_rejected',
-                'appointment_reminder',
-                'appointment_cancelled',
-                'emergency_time_set',
-                'lab_order_ready',
-                'lab_order_rejected',
-                'lab_order_modification_accepted',
-                'lab_order_modification_rejected',
-                'material_request_fulfilled',
-                'material_request_not_available',
-                'new_material_request_approved',
-                'new_material_request_rejected',
-                'invoice_generated',
-                'payment_received',
-            ]);
+            $table->string('type');
 
             $table->string('title');
             $table->text('body');

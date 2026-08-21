@@ -16,7 +16,9 @@ use Illuminate\Support\Facades\Gate;
 use App\Models\EmployeeQrCode;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Storage;
-
+use App\Services\NotificationService;
+use App\Models\User;
+use App\Enums\UserRole;
 class AttendanceController extends Controller
 {
     // public function __construct()
@@ -442,6 +444,24 @@ private function employeeWorksOnDay(
             $attendance->load(['employee.user', 'registeredBy']);
         }
 
+
+                if ($attendance->status === 'absent') {
+            $employeeName = $attendance->employee?->user?->name ?? 'موظف';
+
+            $admins = User::where('role', UserRole::ADMIN)
+                ->where('is_active', true)
+                ->get();
+
+            foreach ($admins as $admin) {
+                NotificationService::send(
+                    user: $admin,
+                    title: 'تنبيه غياب موظف',
+                    body: "الموظف ({$employeeName}) غائب بتاريخ {$attendance->date->format('Y-m-d')}",
+                    type: 'employee_absent',
+                    referenceable: $attendance
+                );
+            }
+        }
         return response()->json([
             'success' => true,
             'message' => 'تم تسجيل الغياب بنجاح.',

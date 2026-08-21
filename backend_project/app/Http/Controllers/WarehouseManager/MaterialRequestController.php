@@ -12,6 +12,9 @@ use App\Models\WarehouseStockLog;
 use App\Models\WarehouseFulfillment;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
+use App\Services\NotificationService;
+use App\Models\User;
+use App\Enums\UserRole;
 
 class MaterialRequestController extends Controller
 {
@@ -68,131 +71,158 @@ class MaterialRequestController extends Controller
      * Allowed from: new, pending
      * Final status: completed
      */
-    public function fulfill(FulfillMaterialRequestRequest $request, $id)
-    {
-        $materialRequest = MaterialRequest::with('items.material')->find($id);
+public function fulfill(FulfillMaterialRequestRequest $request, $id)
+{
+    $materialRequest = MaterialRequest::with('items.material')->find($id);
 
-        if (!$materialRequest) {
-            return response()->json([
-                'success' => false,
-                'message' => 'الطلب غير موجود',
-            ], 404);
-        }
+    if (!$materialRequest) {
+        return response()->json([
+            'success' => false,
+            'message' => 'الطلب غير موجود',
+        ], 404);
+    }
 
-        // Only new or pending can be fulfilled
-        if (!in_array($materialRequest->status, ['new', 'pending'], true)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'لا يمكن تلبية طلب تمت معالجته مسبقاً أو تم رفضه أو إلغاؤه',
-            ], 422);
-        }
+    // Only new or pending can be fulfilled
+    if (!in_array($materialRequest->status, ['new', 'pending'], true)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'لا يمكن تلبية طلب تمت معالجته مسبقاً أو تم رفضه أو إلغاؤه',
+        ], 422);
+    }
 
-        if ($materialRequest->items->isEmpty()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'الطلب لا يحتوي على مواد للتلبية',
-            ], 422);
-        }
+    if ($materialRequest->items->isEmpty()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'الطلب لا يحتوي على مواد للتلبية',
+        ], 422);
+    }
 
-        DB::beginTransaction();
+    DB::beginTransaction();
 
-        try {
-            foreach ($materialRequest->items as $requestItem) {
-                $remaining = $requestItem->quantity_requested;
+    try {
+        $lowStockMaterials = [];   // ← 1. Initialize here
 
-                // FIFO: oldest non-expired batch first
-                $batches = WarehouseStock::where('material_id', $requestItem->material_id)
-                    ->where('quantity', '>', 0)
-                    ->where(function ($q) {
-                        $q->whereNull('expiration_date')
-                          ->orWhere('expiration_date', '>=', now()->toDateString());
-                    })
-                    ->orderByRaw('expiration_date IS NULL ASC') // nulls last
-                    ->orderBy('expiration_date', 'asc')
-                    ->orderBy('id', 'asc')
-                    ->lockForUpdate()
-                    ->get();
+        foreach ($materialRequest->items as $requestItem) {
+            $remaining = $requestItem->quantity_requested;
 
-                $totalAvailable = $batches->sum('quantity');
+            // FIFO: oldest non-expired batch first
+            $batches = WarehouseStock::where('material_id', $requestItem->material_id)
+                ->where('quantity', '>', 0)
+                ->where(function ($q) {
+                    $q->whereNull('expiration_date')
+                      ->orWhere('expiration_date', '>=', now()->toDateString());
+                })
+                ->orderByRaw('expiration_date IS NULL ASC')
+                ->orderBy('expiration_date', 'asc')
+                ->orderBy('id', 'asc')
+                ->lockForUpdate()
+                ->get();
 
-                if ($totalAvailable < $remaining) {
-                    DB::rollBack();
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'الكمية غير كافية للمادة: '
-                            . ($requestItem->material->name ?? '#' . $requestItem->material_id)
-                            . " (المطلوب: {$remaining}, المتوفر: {$totalAvailable})",
-                    ], 422);
-                }
+            $totalAvailable = $batches->sum('quantity');
 
-                // Deduct from batches until quantity is covered
-                foreach ($batches as $stock) {
-                    if ($remaining <= 0) {
-                        break;
-                    }
-
-                    $take = min($stock->quantity, $remaining);
-
-                    $stock->decrement('quantity', $take);
-
-                    // Stock log
-                    WarehouseStockLog::create([
-                        'material_id'        => $requestItem->material_id,
-                        'warehouse_stock_id' => $stock->id,
-                        'type'               => 'out',
-                        'quantity'           => $take,
-                        'reason'             => 'fulfillment',
-                        'notes'              => "تلبية طلب مواد #{$materialRequest->id}",
-                        'done_by'            => $request->user()->id,
-                    ]);
-
-                    // Fulfillment record (per batch)
-                    WarehouseFulfillment::create([
-                        'material_request_item_id' => $requestItem->id,
-                        'warehouse_stock_id'       => $stock->id,
-                        'quantity_given'           => $take,
-                        'fulfilled_by'             => $request->user()->id,
-                        'status'                   => 'fulfilled',
-                    ]);
-
-                    $remaining -= $take;
-                }
-
-                // No item-level status — whole request is completed together
+            if ($totalAvailable < $remaining) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'الكمية غير كافية للمادة: '
+                        . ($requestItem->material->name ?? '#' . $requestItem->material_id)
+                        . " (المطلوب: {$remaining}, المتوفر: {$totalAvailable})",
+                ], 422);
             }
 
-            // Mark whole request as completed
-            $materialRequest->update([
-                'status'          => 'completed',
-                'warehouse_notes' => $request->notes ?? $materialRequest->warehouse_notes,
-            ]);
+            // Deduct from batches until quantity is covered
+            foreach ($batches as $stock) {
+                if ($remaining <= 0) {
+                    break;
+                }
 
-            DB::commit();
+                $take = min($stock->quantity, $remaining);
 
-            $materialRequest->load([
-                'requestedBy',
-                'clinic',
-                'items.material',
-                'items.fulfillment.fulfilledBy',
-                'newItems',
-            ]);
+                $stock->decrement('quantity', $take);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'تم تلبية الطلب بالكامل بنجاح',
-                'data'    => new MaterialRequestResource($materialRequest),
-            ]);
+                // Stock log
+                WarehouseStockLog::create([
+                    'material_id'        => $requestItem->material_id,
+                    'warehouse_stock_id' => $stock->id,
+                    'type'               => 'out',
+                    'quantity'           => $take,
+                    'reason'             => 'fulfillment',
+                    'notes'              => "تلبية طلب مواد #{$materialRequest->id}",
+                    'done_by'            => $request->user()->id,
+                ]);
 
-        } catch (\Exception $e) {
-            DB::rollBack();
+                // Fulfillment record (per batch)
+                WarehouseFulfillment::create([
+                    'material_request_item_id' => $requestItem->id,
+                    'warehouse_stock_id'       => $stock->id,
+                    'quantity_given'           => $take,
+                    'fulfilled_by'             => $request->user()->id,
+                    'status'                   => 'fulfilled',
+                ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'حدث خطأ أثناء تلبية الطلب',
-                // 'error'   => $e->getMessage(), // enable while debugging
-            ], 500);
+                $remaining -= $take;
+
+                // ← 2. Check low stock AFTER decrement
+                $stock->refresh();
+                if ($stock->quantity <= 10) {   // threshold (same as Admin InventoryController)
+                    // avoid duplicates if same material appears multiple times
+                    $lowStockMaterials[$stock->material_id] = $stock->load('material');
+                }
+            }
         }
+
+        // Mark whole request as completed
+        $materialRequest->update([
+            'status'          => 'completed',
+            'warehouse_notes' => $request->notes ?? $materialRequest->warehouse_notes,
+        ]);
+
+        DB::commit();
+
+        // ← 3. Send notifications AFTER successful commit
+        if (!empty($lowStockMaterials)) {
+            $admins = User::where('role', UserRole::ADMIN)
+                ->where('is_active', true)
+                ->get();
+
+            foreach ($lowStockMaterials as $stock) {
+                $materialName = $stock->material?->name ?? 'مادة';
+
+                foreach ($admins as $admin) {
+                    NotificationService::send(
+                        user: $admin,
+                        title: 'تنبيه: نقص في مواد المستودع',
+                        body: "المادة ({$materialName}) وصلت لحد التنبيه في المستودع (الكمية الحالية: {$stock->quantity})",
+                        type: 'warehouse_low_stock',
+                        referenceable: $stock
+                    );
+                }
+            }
+        }
+
+        $materialRequest->load([
+            'requestedBy',
+            'clinic',
+            'items.material',
+            'items.fulfillment.fulfilledBy',
+            'newItems',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم تلبية الطلب بالكامل بنجاح',
+            'data'    => new MaterialRequestResource($materialRequest),
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        return response()->json([
+            'success' => false,
+            'message' => 'حدث خطأ أثناء تلبية الطلب',
+        ], 500);
     }
+}
 
     /**
      * PATCH /warehouse/material-requests/{id}/reject
