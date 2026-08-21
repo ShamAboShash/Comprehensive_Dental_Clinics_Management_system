@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\NewNotification;
 use App\Models\Notification;
 use App\Models\User;
 use App\Models\UserDevice;
@@ -15,7 +16,8 @@ class NotificationService
     /**
      * Send a notification:
      * 1. Save it in the database
-     * 2. Push it to all devices of the user (if any)
+     * 2. Broadcast it live via Reverb (WebSocket)
+     * 3. Push it to all devices of the user via FCM (if any)
      */
     public static function send(
         User $user,
@@ -35,14 +37,17 @@ class NotificationService
             'reference_id'   => $referenceable?->id,
         ]);
 
-        // 2. Get all FCM tokens of this user
+        // 2. Live WebSocket broadcast (Reverb)
+        event(new NewNotification($notification));
+
+        // 3. Get all FCM tokens of this user
         $tokens = UserDevice::where('user_id', $user->id)
             ->pluck('fcm_token')
             ->filter()
             ->unique()
             ->values();
 
-        // 3. Send push to every device
+        // 4. Send push to every device
         foreach ($tokens as $token) {
             try {
                 self::sendFcmPush($token, $title, $body, [
@@ -83,7 +88,7 @@ class NotificationService
                         'title' => $title,
                         'body'  => $body,
                     ],
-                    'data' => array_map('strval', $data), // FCM requires all data values as strings
+                    'data' => array_map('strval', $data),
                     'android' => [
                         'priority' => 'high',
                     ],
@@ -106,7 +111,6 @@ class NotificationService
                 'body'   => $response->json(),
             ]);
 
-            // If the token is invalid, we can optionally delete it later
             throw new \RuntimeException('FCM send failed: ' . $response->body());
         }
     }
