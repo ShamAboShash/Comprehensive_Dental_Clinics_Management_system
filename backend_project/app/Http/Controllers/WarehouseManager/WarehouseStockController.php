@@ -256,24 +256,26 @@ class WarehouseStockController extends Controller
         $stock->refresh()->load('material');
 
         // ── Notify Admin if stock became low after an "out" ──
-        if ($type === 'out' && $stock->quantity <= 10) {   // LOW_STOCK_THRESHOLD
-            $materialName = $stock->material?->name ?? 'مادة';
+            if ($type === 'out' && $stock->quantity <= 10) {
+        $materialName = $stock->material?->name ?? 'مادة';
 
-            $admins = User::where('role', UserRole::ADMIN)
-                ->where('is_active', true)
-                ->get();
+        $recipients = User::whereIn('role', [
+                UserRole::ADMIN,
+                UserRole::WAREHOUSE_MANAGER,
+            ])
+            ->where('is_active', true)
+            ->get();
 
-            foreach ($admins as $admin) {
-                NotificationService::send(
-                    user: $admin,
-                    title: 'تنبيه: نقص في مواد المستودع',
-                    body: "المادة ({$materialName}) وصلت لحد التنبيه في المستودع (الكمية الحالية: {$stock->quantity})",
-                    type: 'warehouse_low_stock',
-                    referenceable: $stock
-                );
-            }
+        foreach ($recipients as $user) {
+            NotificationService::send(
+                user: $user,
+                title: 'تنبيه: نقص في مواد المستودع',
+                body: "المادة ({$materialName}) وصلت لحد التنبيه في المستودع (الكمية الحالية: {$stock->quantity})",
+                type: 'warehouse_low_stock',
+                referenceable: $stock
+            );
         }
-
+    }
         return response()->json([
             'success' => true,
             'message' => $type === 'in'

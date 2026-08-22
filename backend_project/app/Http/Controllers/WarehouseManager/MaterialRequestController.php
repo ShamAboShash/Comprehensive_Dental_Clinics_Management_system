@@ -180,33 +180,41 @@ public function fulfill(FulfillMaterialRequestRequest $request, $id)
         DB::commit();
 
         // ← 3. Send notifications AFTER successful commit
-        if (!empty($lowStockMaterials)) {
-            $admins = User::where('role', UserRole::ADMIN)
-                ->where('is_active', true)
-                ->get();
+if (!empty($lowStockMaterials)) {
+    $recipients = User::whereIn('role', [
+            UserRole::ADMIN,
+            UserRole::WAREHOUSE_MANAGER,
+        ])
+        ->where('is_active', true)
+        ->get();
 
-            foreach ($lowStockMaterials as $stock) {
-                $materialName = $stock->material?->name ?? 'مادة';
+    foreach ($lowStockMaterials as $stock) {
+        $materialName = $stock->material?->name ?? 'مادة';
 
-                foreach ($admins as $admin) {
-                    NotificationService::send(
-                        user: $admin,
-                        title: 'تنبيه: نقص في مواد المستودع',
-                        body: "المادة ({$materialName}) وصلت لحد التنبيه في المستودع (الكمية الحالية: {$stock->quantity})",
-                        type: 'warehouse_low_stock',
-                        referenceable: $stock
-                    );
-                }
-            }
+        foreach ($recipients as $user) {
+            NotificationService::send(
+                user: $user,
+                title: 'تنبيه: نقص في مواد المستودع',
+                body: "المادة ({$materialName}) وصلت لحد التنبيه في المستودع (الكمية الحالية: {$stock->quantity})",
+                type: 'warehouse_low_stock',
+                referenceable: $stock
+            );
         }
+    }
+}
 
-        $materialRequest->load([
-            'requestedBy',
-            'clinic',
-            'items.material',
-            'items.fulfillment.fulfilledBy',
-            'newItems',
-        ]);
+// Also notify the requester (Secretary or Lab Manager) that the request was fulfilled
+$materialRequest->loadMissing('requestedBy');
+
+if ($materialRequest->requestedBy) {
+    NotificationService::send(
+        user: $materialRequest->requestedBy,
+        title: 'تم تلبية طلب المواد',
+        body: "تم تجهيز طلب المواد رقم #{$materialRequest->id} بنجاح",
+        type: 'material_request_fulfilled',
+        referenceable: $materialRequest
+    );
+}
 
         return response()->json([
             'success' => true,

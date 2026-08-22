@@ -12,6 +12,9 @@ use App\Models\NewMaterialRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use App\Services\NotificationService;
+use App\Models\User;
+use App\Enums\UserRole;
 
 class MaterialRequestController extends Controller
 {
@@ -105,6 +108,20 @@ class MaterialRequestController extends Controller
             DB::commit();
 
             $materialRequest->load(['items.material', 'newItems', 'requestedBy', 'clinic']);
+
+            $warehouseManagers = User::where('role', UserRole::WAREHOUSE_MANAGER)
+                ->where('is_active', true)
+                ->get();
+
+            foreach ($warehouseManagers as $manager) {
+                NotificationService::send(
+                    user: $manager,
+                    title: 'طلب مواد جديد',
+                    body: "وصل طلب مواد جديد رقم #{$materialRequest->id}",
+                    type: 'material_request_new',
+                    referenceable: $materialRequest
+                );
+            }
 
             return response()->json([
                 'success' => true,
