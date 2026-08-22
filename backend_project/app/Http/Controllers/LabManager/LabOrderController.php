@@ -137,7 +137,7 @@ class LabOrderController extends Controller
 // PATCH /lab/orders/{id}/set-completed
 public function setCompleted(SetOrderCompletedRequest $request, $id)
 {
-    $order = LabOrder::with(['dentist.user', 'items'])->find($id);
+    $order = LabOrder::with(['dentist.employee.user', 'items'])->find($id);
 
     if (!$order) {
         return response()->json([
@@ -203,11 +203,11 @@ public function setCompleted(SetOrderCompletedRequest $request, $id)
         DB::commit();
 
         // ====================== NOTIFICATIONS (after successful commit) ======================
-
+$dentistUser = $order->dentist?->employee?->user;
         // 1. Notify the dentist that the lab order is completed
-        if ($order->dentist?->user) {
+        if ($dentistUser) {
             NotificationService::send(
-                user: $order->dentist->user,
+                user: $dentistUser,
                 title: 'طلب المختبر مكتمل',
                 body: "تم إنجاز طلب المختبر #{$order->id} بنجاح",
                 type: 'lab_order_ready',          // or 'lab_order_completed'
@@ -243,7 +243,7 @@ public function setCompleted(SetOrderCompletedRequest $request, $id)
                 'items.labOrderType',
                 'technician.user',
                 'modifications',
-                'dentist.user',
+                'dentist.employee.user',
             ])),
         ]);
 
