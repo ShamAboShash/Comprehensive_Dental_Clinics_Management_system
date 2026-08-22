@@ -34,7 +34,6 @@ use App\Http\Controllers\LabManager\LabOrderController;
 use App\Http\Controllers\LabManager\LabOrderTypeCategoryController;
 use App\Http\Controllers\LabManager\LabStockController;
 use App\Http\Controllers\LabManager\MaterialRequestController;
-use App\Http\Controllers\LabManager\NotificationController;
 use App\Http\Controllers\LabManager\TechnicianController;
 use App\Http\Controllers\LabManager\WarehouseMaterialController;
 
@@ -64,6 +63,9 @@ use App\Http\Controllers\WarehouseManager\MaterialRequestController as Warehouse
 use App\Http\Controllers\WarehouseManager\PurchaseInvoiceController;
 use App\Http\Controllers\WarehouseManager\ReportController;
 use App\Http\Controllers\WarehouseManager\WarehouseStockController;
+
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\FcmTokenController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -100,6 +102,21 @@ Route::get('/labOrderTypes', [ShowThingsController::class, 'labOrderTypes']);
 Route::get('/centerInfo', [ShowThingsController::class, 'centerInfo']);
 
 // 16
+
+
+Route::middleware(['auth:sanctum', 'active'])->group(function () {
+
+    // Shared notifications (Admin, Secretary, Dentist, Patient, Lab, Warehouse...)
+    Route::get('/notifications',              [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::post('/notifications/{id}/read',   [NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/read-all',    [NotificationController::class, 'markAllAsRead']);
+
+    // FCM token
+    Route::post('/fcm-token',                 [FcmTokenController::class, 'store']);
+    Route::delete('/fcm-token',               [FcmTokenController::class, 'destroy']);
+});
+
 
 // ====================== EMPLOYEE ======================
 
