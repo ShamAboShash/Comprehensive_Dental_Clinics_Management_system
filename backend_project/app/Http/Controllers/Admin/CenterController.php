@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use App\Services\NotificationService;
 
 class CenterController extends Controller
 {
@@ -284,28 +285,49 @@ public function updateWorkHours(Request $request)
         ]);
     }
 
-    public function complaintUpdate(Request $request, Complaint $complaint): JsonResponse
-    {
-        Gate::authorize('is-admin');
 
-        $validated = $request->validate([
-            'status'         => 'sometimes|required|string|in:pending,in_review,resolved,rejected',
-            'admin_response' => 'nullable|string',
-        ]);
+public function complaintUpdate(Request $request, Complaint $complaint): JsonResponse
+{
+    Gate::authorize('is-admin');
 
-        $complaint->update($validated);
-        $complaint->load(['patient.user:id,name,email,phone', 'submittedBy:id,name,email,phone,role']);
+    $validated = $request->validate([
+        'status'         => 'sometimes|required|string|in:pending,in_review,resolved,rejected',
+        'admin_response' => 'nullable|string',
+    ]);
 
-        $message = $validated['status'] === 'resolved'
+    $complaint->update($validated);
+    $complaint->load(['patient.user:id,name,email,phone', 'submittedBy:id,name,email,phone,role']);
+
+    // Notify the patient when there is a response / final status
+    $shouldNotify = isset($validated['admin_response'])
+        || in_array($validated['status'] ?? null, ['resolved', 'rejected'], true);
+
+    if ($shouldNotify && $complaint->patient?->user) {
+        $statusLabel = match ($complaint->status) {
+            'resolved' => 'تم حل شكواك',
+            'rejected' => 'تم رفض شكواك',
+            default    => 'تم الرد على شكواك',
+        };
+
+        NotificationService::send(
+            user: $complaint->patient->user,
+            title: 'رد على الشكوى',
+            body: "{$statusLabel} رقم #{$complaint->id}",
+            type: 'complaint_responded',
+            referenceable: $complaint
+        );
+    }
+
+    $message = ($validated['status'] ?? null) === 'resolved'
         ? 'تم حل الشكوى بنجاح'
-        : 'تم رفض الشكوى';
+        : ((($validated['status'] ?? null) === 'rejected') ? 'تم رفض الشكوى' : 'تم تحديث الشكوى');
 
-        return response()->json([
-            'success' => true,
-            'message' => $message,
-            'data'    => new ComplaintResource($complaint),
-        ]);
-        }
+    return response()->json([
+        'success' => true,
+        'message' => $message,
+        'data'    => new ComplaintResource($complaint),
+    ]);
+}
 
 
         private function formatCenterInfo(CenterInfo $centerInfo): array

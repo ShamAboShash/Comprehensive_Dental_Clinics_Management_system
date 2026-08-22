@@ -11,6 +11,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use App\Services\NotificationService;
 
 class AppointmentController extends Controller
 {
@@ -245,6 +246,32 @@ public function monthly(Request $request): JsonResponse
             'status'           => $new,
             'rejection_reason' => $request->rejection_reason ?? $appointment->rejection_reason,
         ]);
+
+
+        $appointment->loadMissing('patient.user');
+
+        if ($appointment->patient?->user) {
+            if ($new === 'approved') {
+                NotificationService::send(
+                    user: $appointment->patient->user,
+                    title: 'تم قبول الموعد',
+                    body: "تم قبول موعدك رقم #{$appointment->id}",
+                    type: 'appointment_approved',
+                    referenceable: $appointment
+                );
+            }
+
+            if ($new === 'rejected') {
+                NotificationService::send(
+                    user: $appointment->patient->user,
+                    title: 'تم رفض الموعد',
+                    body: "تم رفض موعدك رقم #{$appointment->id}",
+                    type: 'appointment_rejected',
+                    referenceable: $appointment
+                );
+            }
+        }
+
 
         return response()->json([
             'success' => true,

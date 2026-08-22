@@ -19,9 +19,9 @@ class NotificationController extends Controller
             ->paginate(20);
 
         return response()->json([
-            'success' => true,
-            'data'    => $notifications,
-        ]);
+        'success' => true,
+        'data'    => \App\Http\Resources\NotificationResource::collection($notifications),
+]);
     }
 
     /**
